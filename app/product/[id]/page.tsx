@@ -73,8 +73,26 @@ export default async function PublicProductPage(props: { params: Promise<{ id: s
             </p>
           </div>
         </div>
+{/* SEZIONE ORIGINE E SOSTANZE RIFINITA */}
+<div className="mb-8 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex justify-around items-center text-center">
+    <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Origine</p>
+        <p className="text-[13px] font-bold text-slate-700 flex flex-col items-center">
+           <span className="text-base mb-0.5">📍</span>
+           {product.origin === 'EMPTY' || !product.origin ? 'Italy (UE)' : product.origin}
+        </p>
+    </div>
+    <div className="w-px h-10 bg-slate-200"></div>
+    <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sostanze</p>
+        <p className="text-[13px] font-bold text-green-600 flex flex-col items-center">
+           <span className="text-base mb-0.5">🛡️</span>
+           REACH OK
+        </p>
+    </div>
+</div>
 
-        {/* REPAIR SCORE - TRATTINI SOTTILI */}
+        {/* REPAIR SCORE */}
         <div className="mb-10 text-center">
           <p className="text-[9px] font-black text-slate-400 uppercase mb-4 tracking-[0.3em]">Repair Score</p>
           <div className="flex justify-center gap-2">
@@ -93,11 +111,22 @@ export default async function PublicProductPage(props: { params: Promise<{ id: s
           </div>
         </div>
 
-        {/* RECYCLING & CIRCULARITY (Come nella Home) */}
+        {/* TASTO DOCUMENTAZIONE TECNICA (OBBLIGATORIO) */}
+        {product.technical_sheet_url && (
+          <a 
+            href={product.technical_sheet_url} 
+            target="_blank"
+            className="w-full mb-6 py-4 bg-[#111827] text-white rounded-2xl flex items-center justify-center gap-3 font-bold text-sm hover:bg-slate-800 transition-colors shadow-lg"
+          >
+            <span>📄</span> Scarica Scheda Tecnica (PDF)
+          </a>
+        )}
+
+        {/* RECYCLING & CIRCULARITY */}
         <div className="bg-slate-50/50 border border-slate-100 rounded-[2rem] p-6 text-center mb-8">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Riciclo & Circolarità</p>
             <p className="text-[13px] text-slate-500 font-medium italic">
-              {product.recycling_instructions || "Informazioni standard."}
+              {product.recycling_instructions || "Informazioni standard per il riciclo dei tessuti."}
             </p>
         </div>
 
