@@ -44,9 +44,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#e9ecef] p-8 font-sans text-slate-900">
       
-      {/* HEADER ORIGINALE */}
+      {/* HEADER CON LOGO BICOLORE (PASS IN BLU) */}
       <div className="max-w-[1400px] mx-auto flex justify-between items-center mb-12 px-4">
-        <h1 className="text-4xl font-black italic tracking-tighter text-slate-800 uppercase">TRACEPASS</h1>
+        <h1 className="text-4xl font-black italic tracking-tighter text-slate-800 uppercase">
+          TRACE<span className="text-[#0062ff]">PASS</span>
+        </h1>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">System Online</span>
@@ -55,33 +57,33 @@ export default function Home() {
 
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
         
-        {/* INSERIMENTO DATI (SINISTRA) */}
+        {/* INSERIMENTO DATI */}
         <div className="lg:col-span-4 bg-[#f8f9fa] rounded-[3.5rem] p-12 shadow-sm border border-white/50 h-fit">
-          <h2 className="text-2xl font-black uppercase mb-10 tracking-tight">Inserimento Dati</h2>
+          <h2 className="text-2xl font-black uppercase mb-10 tracking-tight text-slate-800">Inserimento Dati</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input required placeholder="Nome Prodotto" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium"
+            <input required placeholder="Nome Prodotto" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
               value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
             
             <div className="grid grid-cols-2 gap-4">
-              <input required placeholder="Materiali" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium"
+              <input required placeholder="Materiali" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
                 value={formData.material_composition} onChange={(e) => setFormData({...formData, material_composition: e.target.value})} />
-              <input required placeholder="CO2 (kg)" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium"
+              <input required placeholder="CO2 (kg)" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
                 value={formData.carbon_footprint} onChange={(e) => setFormData({...formData, carbon_footprint: e.target.value})} />
             </div>
 
-            <input placeholder="Origine (es: Italy IT)" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium"
+            <input placeholder="Origine (es: Italy IT)" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
               value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} />
 
-            <input placeholder="URL PDF Scheda Tecnica" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium"
+            <input placeholder="URL Scheda Tecnica (PDF)" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
               value={formData.technical_sheet_url} onChange={(e) => setFormData({...formData, technical_sheet_url: e.target.value})} />
 
-            <textarea placeholder="Note Riciclo..." className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium h-24 resize-none"
+            <textarea placeholder="Note Riciclo..." className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium h-24 resize-none text-slate-700"
               value={formData.recycling_instructions} onChange={(e) => setFormData({...formData, recycling_instructions: e.target.value})} />
 
             <div className="pt-2 text-center">
               <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Riparabilità: {formData.repair_score}/5</p>
-              <input type="range" min="1" max="5" className="w-full accent-blue-600" value={formData.repair_score}
+              <input type="range" min="1" max="5" className="w-full accent-[#0062ff]" value={formData.repair_score}
                 onChange={(e) => setFormData({...formData, repair_score: parseInt(e.target.value)})} />
             </div>
 
@@ -91,7 +93,7 @@ export default function Home() {
           </form>
         </div>
 
-        {/* ARCHIVIO DIGITALE (DESTRA) */}
+        {/* ARCHIVIO DIGITALE */}
         <div className="lg:col-span-8">
           <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-400 mb-8 px-6 text-right">Archivio Digitale</h2>
 
@@ -101,20 +103,19 @@ export default function Home() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">{p.name}</h3>
-                    <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-black uppercase tracking-tighter">EU Tracked</span>
+                    <span className="text-[9px] bg-blue-50 text-[#0062ff] px-2 py-0.5 rounded font-black uppercase tracking-tighter">EU Tracked</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Origine</p>
-                    <p className="text-[11px] font-bold text-slate-700 italic">{p.origin || 'Italy (UE)'}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Origine</p>
+                    <p className="text-[11px] font-bold text-slate-700 italic">{p.origin || 'N/A'}</p>
                   </div>
                 </div>
 
-                {/* I TRE BOX: MATERIALI, CARBON, SOSTANZE */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
                   <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
                     <span className="text-xl block mb-1">🌿</span>
                     <p className="text-[7px] font-black text-green-700 uppercase mb-1">Materiali</p>
-                    <p className="text-[11px] font-bold text-slate-700 truncate">{p.material_composition}</p>
+                    <p className="text-[11px] font-bold text-slate-700 truncate px-1">{p.material_composition}</p>
                   </div>
                   <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
                     <span className="text-xl block mb-1">☁️</span>
@@ -124,7 +125,7 @@ export default function Home() {
                   <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
                     <span className="text-xl block mb-1">🛡️</span>
                     <p className="text-[7px] font-black text-blue-700 uppercase mb-1">Sostanze</p>
-                    <p className="text-[10px] font-black text-green-600">REACH OK</p>
+                    <p className="text-[10px] font-black text-green-600 uppercase">Reach Ok</p>
                   </div>
                 </div>
 
