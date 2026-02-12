@@ -1,154 +1,155 @@
-'use client'
+import Link from 'next/link';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { QRCodeSVG } from 'qrcode.react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-export default function Home() {
-  const [loading, setLoading] = useState(false)
-  const [products, setProducts] = useState<any[]>([])
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    material_composition: '',
-    carbon_footprint: '',
-    origin: '',
-    recycling_instructions: '',
-    technical_sheet_url: '',
-    repair_score: 5
-  })
-
-  const fetchProducts = async () => {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    if (data) setProducts(data)
-  }
-
-  useEffect(() => { fetchProducts() }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    const { error } = await supabase.from('products').insert([formData])
-    if (!error) {
-      setFormData({ name: '', material_composition: '', carbon_footprint: '', origin: '', recycling_instructions: '', technical_sheet_url: '', repair_score: 5 })
-      fetchProducts()
-    }
-    setLoading(false)
-  }
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#e9ecef] p-8 font-sans text-slate-900">
-      
-      {/* HEADER CON LOGO BICOLORE (PASS IN BLU) */}
-      <div className="max-w-[1400px] mx-auto flex justify-between items-center mb-12 px-4">
-        <h1 className="text-4xl font-black italic tracking-tighter text-slate-800 uppercase">
-          TRACE<span className="text-[#0062ff]">PASS</span>
+    <div className="min-h-screen bg-[#f3f4f6] font-sans text-gray-900">
+      {/* Navbar Minimal */}
+      <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-black italic tracking-tighter">
+          <span className="text-gray-900">TRACE</span>
+          <span className="text-[#0062ff]">PASS</span>
         </h1>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">System Online</span>
+        <Link href="/login" className="bg-[#0062ff] text-white px-6 py-2 rounded-full font-bold hover:bg-[#004ecc] transition-all shadow-md">
+          Accedi
+        </Link>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="flex flex-col items-center justify-center text-center py-20 px-4">
+        <h2 className="text-5xl md:text-6xl font-black mb-6 tracking-tight">
+          Il Passaporto Digitale <br /> 
+          <span className="text-[#0062ff]">a portata di QR Code.</span>
+        </h2>
+        <p className="max-w-2xl text-lg text-gray-600 mb-10 font-medium">
+          TracePass aiuta le aziende ad adeguarsi al regolamento *DPP 2026*. 
+          Trasparenza, sostenibilità e conformità normativa in un'unica piattaforma.
+        </p>
+        <Link href="/register" className="bg-white text-[#0062ff] border-2 border-[#0062ff] px-8 py-4 rounded-2xl text-lg font-bold hover:bg-[#0062ff] hover:text-white transition-all shadow-lg">
+          Inizia Ora Gratuitamente
+        </Link>
+      </header>
+
+      {/* DPP 2026 Features Grid */}
+      <section className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-8">
+        {/* Card 1: Riparabilità */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+          <div className="text-3xl mb-4 text-[#0062ff]">🛠️</div>
+          <h3 className="text-xl font-bold mb-3 italic">Indice di Riparabilità</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            In linea con i requisiti 2026, gestiamo il *Repair Score* per ogni prodotto, 
+            incentivando il riutilizzo e la riduzione degli sprechi.
+          </p>
         </div>
+
+        {/* Card 2: Materiali */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+          <div className="text-3xl mb-4 text-[#0062ff]">🌿</div>
+          <h3 className="text-xl font-bold mb-3 italic">Trasparenza Materiali</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Monitora la composizione, l'origine e l'impronta di carbonio. 
+            Ogni dato è archiviato in modo sicuro e accessibile via QR.
+          </p>
+        </div>
+
+        {/* Card 3: Circolarità */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+          <div className="text-3xl mb-4 text-[#0062ff]">♻️</div>
+          <h3 className="text-xl font-bold mb-3 italic">Ciclo di Vita</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Fornisci istruzioni chiare sul riciclo e sulla gestione delle sostanze *REACH* 
+            per garantire un futuro circolare ai tuoi prodotti.
+          </p>
+        </div>
+      </section>
+
+<section className="bg-white py-20 border-y border-gray-100">
+  <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center gap-16">
+    
+{/* Visualizzazione QR Code "REALISTICO" in CSS */}
+<div className="flex-1 flex justify-center">
+  <div className="relative group">
+    <div className="w-72 h-72 bg-white rounded-[3rem] shadow-2xl border border-gray-100 p-10 flex items-center justify-center transition-transform group-hover:scale-105 duration-500">
+      
+      {/* Griglia QR realistica */}
+      <div className="w-full h-full grid grid-cols-7 gap-1">
+        {/* Angolo Top-Left (Quadrato grande) */}
+        <div className="col-span-2 row-span-2 border-4 border-gray-900 rounded-sm p-1">
+          <div className="w-full h-full bg-gray-900 rounded-xs"></div>
+        </div>
+        <div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-transparent"></div>
+        {/* Angolo Top-Right (Quadrato grande) */}
+        <div className="col-span-2 row-span-2 border-4 border-gray-900 rounded-sm p-1">
+          <div className="w-full h-full bg-gray-900 rounded-xs"></div>
+        </div>
+
+        {/* Centro del QR (Pixel casuali) */}
+        <div className="bg-gray-900"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-[#0062ff]"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-transparent"></div>
+        <div className="bg-transparent"></div><div className="bg-[#0062ff] animate-pulse"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-gray-900"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div>
+
+        {/* Angolo Bottom-Left (Quadrato grande) */}
+        <div className="col-span-2 row-span-2 border-4 border-gray-900 rounded-sm p-1">
+          <div className="w-full h-full bg-gray-900 rounded-xs"></div>
+        </div>
+        <div className="bg-gray-900"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-transparent"></div><div className="bg-gray-900"></div>
+        <div className="bg-transparent"></div><div className="bg-gray-900"></div><div className="bg-transparent"></div><div className="bg-[#0062ff]"></div><div className="bg-gray-900"></div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* INSERIMENTO DATI */}
-        <div className="lg:col-span-4 bg-[#f8f9fa] rounded-[3.5rem] p-12 shadow-sm border border-white/50 h-fit">
-          <h2 className="text-2xl font-black uppercase mb-10 tracking-tight text-slate-800">Inserimento Dati</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input required placeholder="Nome Prodotto" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
-              value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <input required placeholder="Materiali" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
-                value={formData.material_composition} onChange={(e) => setFormData({...formData, material_composition: e.target.value})} />
-              <input required placeholder="CO2 (kg)" className="p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
-                value={formData.carbon_footprint} onChange={(e) => setFormData({...formData, carbon_footprint: e.target.value})} />
-            </div>
+      {/* Mini Logo al centro per brandizzare */}
+      <div className="absolute inset-0 flex items-center justify-center">
+         <div className="bg-white p-1.5 rounded-md shadow-sm border border-gray-100 font-black text-[9px] text-[#0062ff] tracking-tighter">
+           TRACE
+         </div>
+      </div>
+    </div>
+    
+    {/* Badge Repair Score (rimasto uguale) */}
+    <div className="absolute -bottom-6 -right-4 bg-[#0062ff] text-white px-6 py-3 rounded-2xl shadow-xl transform rotate-3 font-black italic border-2 border-white">
+      REPAIR SCORE 8.5
+    </div>
+  </div>
+</div>
 
-            <input placeholder="Origine (es: Italy IT)" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
-              value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} />
+    {/* Testo Spiegazione Strategica */}
+    <div className="flex-1 space-y-8">
+      <div>
+        <h2 className="text-4xl font-black tracking-tight text-gray-900 mb-4">
+          La tua infrastruttura <br />
+          <span className="text-[#0062ff]">per il DPP 2026.</span>
+        </h2>
+        <p className="text-gray-600 text-lg leading-relaxed">
+          Non devi preoccuparti della burocrazia. *TracePass* ti fornisce gli strumenti per caricare i dati richiesti dall'UE in pochi click.
+        </p>
+      </div>
 
-            <input placeholder="URL Scheda Tecnica (PDF)" className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium text-slate-700"
-              value={formData.technical_sheet_url} onChange={(e) => setFormData({...formData, technical_sheet_url: e.target.value})} />
-
-            <textarea placeholder="Note Riciclo..." className="w-full p-5 bg-white border border-slate-100 rounded-[1.5rem] outline-none font-medium h-24 resize-none text-slate-700"
-              value={formData.recycling_instructions} onChange={(e) => setFormData({...formData, recycling_instructions: e.target.value})} />
-
-            <div className="pt-2 text-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Riparabilità: {formData.repair_score}/5</p>
-              <input type="range" min="1" max="5" className="w-full accent-[#0062ff]" value={formData.repair_score}
-                onChange={(e) => setFormData({...formData, repair_score: parseInt(e.target.value)})} />
-            </div>
-
-            <button disabled={loading} className="w-full py-6 bg-[#0062ff] text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all">
-              Genera Passaporto
-            </button>
-          </form>
+      <div className="space-y-6">
+        <div className="flex gap-4">
+          <div className="bg-gray-100 p-3 rounded-2xl h-fit italic font-black text-[#0062ff]">01</div>
+          <div>
+            <h4 className="font-bold text-gray-900">Carichi i tuoi contenuti</h4>
+            <p className="text-sm text-gray-500 font-medium">Carica i tuoi PDF tecnici e link video direttamente nella dashboard.</p>
+          </div>
         </div>
-
-        {/* ARCHIVIO DIGITALE */}
-        <div className="lg:col-span-8">
-          <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-400 mb-8 px-6 text-right">Archivio Digitale</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {products.map((p) => (
-              <div key={p.id} className="bg-[#f8f9fa] rounded-[3.5rem] p-10 shadow-sm border border-white group relative">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">{p.name}</h3>
-                    <span className="text-[9px] bg-blue-50 text-[#0062ff] px-2 py-0.5 rounded font-black uppercase tracking-tighter">EU Tracked</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Origine</p>
-                    <p className="text-[11px] font-bold text-slate-700 italic">{p.origin || 'N/A'}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
-                    <span className="text-xl block mb-1">🌿</span>
-                    <p className="text-[7px] font-black text-green-700 uppercase mb-1">Materiali</p>
-                    <p className="text-[11px] font-bold text-slate-700 truncate px-1">{p.material_composition}</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
-                    <span className="text-xl block mb-1">☁️</span>
-                    <p className="text-[7px] font-black text-blue-700 uppercase mb-1">Carbon</p>
-                    <p className="text-[11px] font-bold text-slate-700">{p.carbon_footprint}</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-[1.8rem] text-center border border-slate-50 shadow-sm">
-                    <span className="text-xl block mb-1">🛡️</span>
-                    <p className="text-[7px] font-black text-blue-700 uppercase mb-1">Sostanze</p>
-                    <p className="text-[10px] font-black text-green-600 uppercase">Reach Ok</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-6 mt-4">
-                  <div className="bg-white p-2 rounded-[1.2rem] border border-slate-100 shadow-inner">
-                    <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : ''}/product/${p.id}`} size={64} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex gap-1.5 mb-4 px-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <div key={s} className={`h-1.5 flex-1 rounded-full ${s <= (p.repair_score || 5) ? 'bg-green-500 shadow-sm' : 'bg-slate-200'}`} />
-                      ))}
-                    </div>
-                    <a href={`/product/${p.id}`} target="_blank" className="block w-full text-center py-4 bg-[#0062ff] text-white rounded-[1.2rem] text-[11px] font-black uppercase shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all">
-                      View
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="flex gap-4">
+          <div className="bg-gray-100 p-3 rounded-2xl h-fit italic font-black text-[#0062ff]">02</div>
+          <div>
+            <h4 className="font-bold text-gray-900">Generiamo il passaporto</h4>
+            <p className="text-sm text-gray-500 font-medium">Il sistema crea un QR CODE e una pagina ottimizzata per ogni prodotto.</p>
           </div>
         </div>
       </div>
+      
+      <Link href="/register" className="inline-block bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-lg">
+        Prova la Dashboard
+      </Link>
     </div>
-  )
+
+  </div>
+</section>
+
+      {/* Footer */}
+      <footer className="text-center py-10 text-gray-400 text-xs">
+        <p>© 2026 TracePass - Conformità DPP e Sostenibilità Digitale</p>
+      </footer>
+    </div>
+  );
 }
