@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'; 
 
 export default function LoginPage() {
   // Inizializzazione corretta per SSR
@@ -69,6 +70,13 @@ export default function LoginPage() {
             {loading ? 'Verifica...' : 'Accedi'}
           </button>
         </form>
+        {/* Link per la registrazione da aggiungere sotto il form di Login */}
+<p className="mt-8 text-center text-[13px] text-gray-400 font-medium">
+  Non hai un account?{" "}
+  <Link href="/register" className="text-[#0062ff] font-bold hover:underline ml-1">
+    Registrati ora
+  </Link>
+</p>
       </div>
     </div>
   )
