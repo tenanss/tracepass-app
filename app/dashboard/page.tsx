@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import { QRCodeSVG } from 'qrcode.react'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isPrintMode, setIsPrintMode] = useState(false) // Stato per la modalità stampa
   const [editingId, setEditingId] = useState<string | null>(null)
   
   const [newProduct, setNewProduct] = useState({ 
@@ -18,7 +20,9 @@ export default function DashboardPage() {
     material_composition: '',
     carbon_footprint: '',
     substances_reach: '',
-    recycling_instructions: ''
+    recycling_instructions: '',
+    tech_doc_url: '', 
+    video_url: ''     
   })
 
   const supabase = createBrowserClient(
@@ -36,6 +40,31 @@ export default function DashboardPage() {
     setLoading(false)
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'tech_doc_url' | 'video_url') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const { data, error } = await supabase.storage
+      .from('product-assets')
+      .upload(filePath, file)
+
+    if (error) {
+      alert("Errore upload: " + error.message)
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-assets')
+      .getPublicUrl(filePath)
+
+    setNewProduct({ ...newProduct, [field]: publicUrl })
+    alert("File caricato e collegato!")
+  }
+
   const handleEditClick = (product: any) => {
     setEditingId(product.id)
     setNewProduct({
@@ -45,7 +74,9 @@ export default function DashboardPage() {
       material_composition: product.material_composition || '',
       carbon_footprint: product.carbon_footprint || '',
       substances_reach: product.substances_reach || '',
-      recycling_instructions: product.recycling_instructions || ''
+      recycling_instructions: product.recycling_instructions || '',
+      tech_doc_url: product.tech_doc_url || '',
+      video_url: product.video_url || ''
     })
     setIsModalOpen(true)
   }
@@ -67,7 +98,9 @@ export default function DashboardPage() {
       material_composition: newProduct.material_composition,
       carbon_footprint: newProduct.carbon_footprint,
       substances_reach: newProduct.substances_reach,
-      recycling_instructions: newProduct.recycling_instructions
+      recycling_instructions: newProduct.recycling_instructions,
+      tech_doc_url: newProduct.tech_doc_url,
+      video_url: newProduct.video_url
     }
 
     let error;
@@ -84,13 +117,47 @@ export default function DashboardPage() {
     } else {
       setIsModalOpen(false)
       setEditingId(null)
-      setNewProduct({ name: '', repair_score: '5', origin: '', material_composition: '', carbon_footprint: '', substances_reach: '', recycling_instructions: '' })
+      setNewProduct({ 
+        name: '', repair_score: '5', origin: '', material_composition: '', 
+        carbon_footprint: '', substances_reach: '', recycling_instructions: '',
+        tech_doc_url: '', video_url: '' 
+      })
       fetchProducts()
     }
   }
 
-  if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse">TracePass Loading...</div>
+  if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 
+  // --- VISTA STAMPA (SERIE) ---
+  if (isPrintMode) {
+    return (
+      <div className="min-h-screen bg-white p-10">
+        <div className="print:hidden mb-8 flex justify-between items-center bg-slate-900 p-6 rounded-2xl text-white">
+          <div>
+            <h2 className="font-black uppercase italic">Modalità Stampa Etichette</h2>
+            <p className="text-[10px] text-slate-400 uppercase font-bold">Verranno generate {products.length} etichette</p>
+          </div>
+          <div className="flex gap-4">
+            <button onClick={() => window.print()} className="bg-[#0062ff] px-6 py-2 rounded-xl text-[10px] font-black uppercase">Conferma Stampa</button>
+            <button onClick={() => setIsPrintMode(false)} className="bg-white/10 px-6 py-2 rounded-xl text-[10px] font-black uppercase">Esci</button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map((p) => (
+            <div key={p.id} className="border border-slate-200 p-6 flex flex-col items-center text-center rounded-xl bg-white shadow-sm page-break-inside-avoid">
+              <span className="text-[7px] font-black uppercase tracking-widest text-slate-400 mb-4 italic">TracePass Certified</span>
+              <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : ''}/product/${p.id}`} size={100} level="H" />
+              <h3 className="mt-4 font-black uppercase italic text-sm tracking-tighter">{p.name}</h3>
+              <p className="text-[8px] font-mono text-slate-400 mt-1 uppercase">ID: {p.id.slice(0,13)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // --- VISTA DASHBOARD NORMALE ---
   return (
     <div className="min-h-screen bg-[#f1f3f5] font-sans text-slate-900 text-left">
       
@@ -111,12 +178,17 @@ export default function DashboardPage() {
           <p className="text-slate-500 font-medium italic text-sm">Digital Product Passport System</p>
         </div>
 
-        {/* RIPRISTINATO CONTATORE TOTALE */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <button onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:''}); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 transition-all flex flex-col justify-between min-h-[180px] group text-left">
+          <button onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:'', tech_doc_url: '', video_url: ''}); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 transition-all flex flex-col justify-between min-h-[180px] group text-left">
             <span className="text-3xl group-hover:rotate-90 transition-transform w-fit">+</span>
             <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
           </button>
+          
+          <button onClick={() => setIsPrintMode(true)} className="md:col-span-1 bg-slate-800 p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-black transition-all flex flex-col justify-between min-h-[180px] text-left">
+            <span className="text-3xl">⎙</span>
+            <span className="text-sm font-black uppercase tracking-widest leading-tight">Stampa Etichette<br/>In Serie</span>
+          </button>
+
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Totale Archivio</span>
             <span className="text-5xl font-black text-slate-900 italic leading-none">{products.length}</span>
@@ -152,17 +224,16 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* FORM COMPLETO PER CREAZIONE E MODIFICA */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
-          <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300">
+          <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300 text-left">
             <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800 mb-8 text-center leading-none">
                 {editingId ? 'Modifica Passport' : 'Nuovo Digital Passport'}
             </h3>
             <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block tracking-widest">Nome Modello</label>
-                <input required className="w-full p-5 rounded-2xl bg-white border border-slate-100 text-sm font-bold italic" value={newProduct.name || ''} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+                <input required className="w-full p-5 rounded-2xl bg-[#eef2ff] border-none text-sm font-bold italic" value={newProduct.name || ''} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block tracking-widest">Origine</label>
@@ -172,6 +243,22 @@ export default function DashboardPage() {
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block tracking-widest">Carbon Footprint</label>
                 <input className="w-full p-5 rounded-2xl bg-white border border-slate-100 text-sm font-bold italic" value={newProduct.carbon_footprint || ''} onChange={(e) => setNewProduct({...newProduct, carbon_footprint: e.target.value})} />
               </div>
+              
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div className="md:col-span-2 mb-2">
+                    <span className="text-[9px] font-black uppercase text-[#0062ff] tracking-widest">Asset Digitali DPP 2026</span>
+                </div>
+                <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block tracking-widest">Carica Manuale PDF</label>
+                    <input type="file" accept=".pdf" onChange={(e) => handleFileUpload(e, 'tech_doc_url')} className="w-full text-[10px] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-[#eef2ff] file:text-[#0062ff] hover:file:bg-blue-100 cursor-pointer italic" />
+                    {newProduct.tech_doc_url && <p className="text-[7px] text-green-500 mt-2 italic truncate">{newProduct.tech_doc_url}</p>}
+                </div>
+                <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block tracking-widest">URL Video Tutorial</label>
+                    <input placeholder="https://youtube.com/..." className="w-full p-4 rounded-xl bg-[#f1f3f5] border-none text-[12px] font-bold italic" value={newProduct.video_url || ''} onChange={(e) => setNewProduct({...newProduct, video_url: e.target.value})} />
+                </div>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block tracking-widest">Materiali Principali</label>
                 <input className="w-full p-5 rounded-2xl bg-white border border-slate-100 text-sm font-bold italic" value={newProduct.material_composition || ''} onChange={(e) => setNewProduct({...newProduct, material_composition: e.target.value})} />
