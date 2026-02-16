@@ -163,11 +163,11 @@ export default function HomePage() {
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">
                 © 2026 TracePass — Ecodesign Compliant System
             </p>
-            <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                <a href="#" className="hover:text-[#0062ff]">Privacy</a>
-                <a href="#" className="hover:text-[#0062ff]">Terms</a>
-                <a href="#" className="hover:text-[#0062ff]">Support</a>
-            </div>
+         <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+    <Link href="/privacy" className="hover:text-[#0062ff] transition-colors">Privacy</Link>
+    <Link href="/terms" className="hover:text-[#0062ff] transition-colors">Terms</Link>
+    <a href="mailto:support@tracepass.com" className="hover:text-[#0062ff] transition-colors">Support</a>
+</div>
         </div>
       </footer>
     </div>
