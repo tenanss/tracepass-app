@@ -8,8 +8,8 @@ export default function HomePage() {
 const [isAnnual, setIsAnnual] = React.useState(true);
 const handleCheckout = async () => {
     //  ID prezzi Stripe 
-    const STRIPE_MONTHLY_ID = "price_1T28vyE7LrcUGUCEt5fI9g2t"; 
-    const STRIPE_YEARLY_ID = "price_1T28vyE7LrcUGUCEo593b8v5";
+    const STRIPE_MONTHLY_ID = "price_1T28vyE7LrcUGUCEt5fI9g2t" ; 
+    const STRIPE_YEARLY_ID = "price_1T28vyE7LrcUGUCEo593b8v5" ;
 
     const selectedPriceId = isAnnual ? STRIPE_YEARLY_ID : STRIPE_MONTHLY_ID;
 
