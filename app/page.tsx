@@ -23,7 +23,7 @@ const handleCheckout = async () => {
       const data = await response.json();
       
       if (data.sessionId) {
-        window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
+      window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
       }
     } catch (err) {
       console.error("Errore Stripe:", err);
