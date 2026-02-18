@@ -168,7 +168,7 @@ const [isAnnual, setIsAnnual] = React.useState(true);
 {/* Sezione Pricing 3.0 - Mensile/Annuale */}
       <section className="relative max-w-7xl mx-auto px-6 py-32 z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 mb-6">
+          <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-gray-900 mb-6 leading-[0.9]">
             Piani su misura per la <br />
             <span className="text-[#0062ff]">tua conformità.</span>
           </h2>
