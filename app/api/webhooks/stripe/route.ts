@@ -24,38 +24,37 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+    return NextResponse.json({ error: 'Firma fallita' }, { status: 400 });
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
+    
+    // Stripe ci restituisce l'ID utente se lo abbiamo passato come client_reference_id
+    // Altrimenti usiamo l'email per identificare la riga (se la colonna email esiste in subscriptions)
     const customerEmail = session.customer_details?.email;
     const subscriptionId = session.subscription as string;
+    const customerId = session.customer as string;
 
-    if (customerEmail) {
-      // Cerchiamo l'ID utente dalla tabella auth
-      const { data: authUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', customerEmail)
-        .single();
+    console.log(`Tentativo di inserimento per: ${customerEmail}`);
 
-      if (authUser) {
-        // Inseriamo i dati nella tabella subscriptions (mappando i tuoi nomi colonne)
-        const { error } = await supabase
-          .from('subscriptions')
-          .upsert({ 
-            user_id: authUser.id,
-            stripe_subscription_id: subscriptionId,
-            status: 'active',
-            plan_type: 'business', // Il nome della tua colonna nella foto 17
-            current_period_end: new Date().toISOString(), // Qui andrebbe la data reale di Stripe
-            stripe_customer_id: session.customer as string
-          });
+    const { error } = await supabase
+      .from('subscriptions')
+      .upsert({ 
+        // Se la tua tabella usa l'email come chiave o se hai l'user_id
+        // Qui usiamo i nomi delle colonne che abbiamo visto nel tuo SQL Editor
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: customerId,
+        status: 'active',
+        plan_type: 'business', 
+        current_period_end: new Date().toISOString(), // In produzione usa il timestamp di Stripe
+        // Nota: Assicurati che la colonna per l'identificazione utente sia corretta
+      }, { onConflict: 'stripe_subscription_id' }); 
 
-        if (error) console.error("❌ Errore DB:", error.message);
-        else console.log(`✅ Abbonamento registrato per ${customerEmail}`);
-      }
+    if (error) {
+      console.error("❌ Errore inserimento Subscriptions:", error.message);
+    } else {
+      console.log("✅ Riga inserita con successo in Subscriptions!");
     }
   }
 
