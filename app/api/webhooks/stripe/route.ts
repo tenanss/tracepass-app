@@ -24,37 +24,32 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    return NextResponse.json({ error: 'Firma fallita' }, { status: 400 });
+    return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    
-    // Stripe ci restituisce l'ID utente se lo abbiamo passato come client_reference_id
-    // Altrimenti usiamo l'email per identificare la riga (se la colonna email esiste in subscriptions)
     const customerEmail = session.customer_details?.email;
-    const subscriptionId = session.subscription as string;
-    const customerId = session.customer as string;
 
-    console.log(`Tentativo di inserimento per: ${customerEmail}`);
+    if (customerEmail) {
+      console.log(`Provando a inserire abbonamento per: ${customerEmail}`);
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .upsert({ 
-        // Se la tua tabella usa l'email come chiave o se hai l'user_id
-        // Qui usiamo i nomi delle colonne che abbiamo visto nel tuo SQL Editor
-        stripe_subscription_id: subscriptionId,
-        stripe_customer_id: customerId,
-        status: 'active',
-        plan_type: 'business', 
-        current_period_end: new Date().toISOString(), // In produzione usa il timestamp di Stripe
-        // Nota: Assicurati che la colonna per l'identificazione utente sia corretta
-      }, { onConflict: 'stripe_subscription_id' }); 
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({ 
+          email: customerEmail,
+          stripe_subscription_id: session.subscription as string,
+          stripe_customer_id: session.customer as string,
+          status: 'active',
+          plan_type: 'business',
+          current_period_end: new Date().toISOString()
+        });
 
-    if (error) {
-      console.error("❌ Errore inserimento Subscriptions:", error.message);
-    } else {
-      console.log("✅ Riga inserita con successo in Subscriptions!");
+      if (error) {
+        console.error("❌ Errore Supabase:", error.message);
+      } else {
+        console.log("✅ Abbonamento salvato correttamente!");
+      }
     }
   }
 
