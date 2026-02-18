@@ -1,8 +1,12 @@
 'use client'
 
 import Link from 'next/link';
+import React from 'react';
 
 export default function HomePage() {
+
+const [isAnnual, setIsAnnual] = React.useState(true);
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans text-gray-900 selection:bg-blue-100">
       
@@ -161,73 +165,83 @@ export default function HomePage() {
 
         </div>
       </section>
-{/* Sezione Pricing - Obiettivo 1 TracePass */}
+{/* Sezione Pricing 3.0 - Mensile/Annuale */}
       <section className="relative max-w-7xl mx-auto px-6 py-32 z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 mb-6">
             Piani su misura per la <br />
             <span className="text-[#0062ff]">tua conformità.</span>
           </h2>
-          <p className="text-gray-500 font-medium italic">Trasparenza totale, nessun costo nascosto.</p>
+          
+          {/* Switch Mensile/Annuale */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <span className={`text-xs font-black uppercase tracking-widest ${!isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>Mensile</span>
+            <button 
+              onClick={() => setIsAnnual(!isAnnual)}
+              className="w-14 h-8 bg-gray-200 rounded-full p-1 relative transition-all duration-300"
+            >
+              <div className={`w-6 h-6 bg-[#0062ff] rounded-full transition-all duration-300 shadow-lg ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`}></div>
+            </button>
+            <span className={`text-xs font-black uppercase tracking-widest ${isAnnual ? 'text-gray-900' : 'text-gray-400'}`}>
+              Annuale <span className="text-[#0062ff] ml-1 text-[10px] bg-blue-50 px-2 py-1 rounded-lg">-20%</span>
+            </span>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           
           {/* Piano Starter */}
-          <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col justify-between hover:border-blue-100 transition-all">
+          <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group">
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-4 py-2 rounded-full">Starter</span>
               <div className="mt-6 mb-8">
                 <span className="text-5xl font-black tracking-tighter">€0</span>
-                <span className="text-gray-400 font-bold ml-2">/mese</span>
+                <span className="text-gray-400 font-bold ml-2">/sempre</span>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">✅ 3 Passaporti Digitali</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">✅ QR Code Statici</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">✅ Hosting PDF base</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-gray-600 italic"><span className="text-blue-500 font-bold">✓</span> 3 Passaporti Digitali</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-gray-600 italic"><span className="text-blue-500 font-bold">✓</span> QR Code Statici</li>
               </ul>
             </div>
-            <Link href="/register" className="w-full text-center py-4 rounded-2xl border-2 border-gray-900 font-black uppercase text-[10px] tracking-widest hover:bg-gray-900 hover:text-white transition-all">
+            <Link href="/register" className="w-full text-center py-4 rounded-2xl border-2 border-gray-900 font-black uppercase text-[10px] tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-all">
               Inizia Gratis
             </Link>
           </div>
 
-          {/* Piano Business - Il più scelto */}
-          <div className="bg-slate-900 p-8 rounded-[3rem] shadow-2xl flex flex-col justify-between transform md:-translate-y-4 border-4 border-[#0062ff]">
+          {/* Piano Business - Dinamico */}
+          <div className="bg-slate-900 p-8 rounded-[3rem] shadow-2xl flex flex-col justify-between transform md:-translate-y-4 border-4 border-[#0062ff] hover:scale-[1.05] transition-all">
             <div>
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full">Consigliato</span>
-              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full">Consigliato</span>
               <div className="mt-6 mb-8 text-white">
-                <span className="text-5xl font-black tracking-tighter">€49</span>
+                <span className="text-5xl font-black tracking-tighter">
+                  {isAnnual ? '€39' : '€49'}
+                </span>
                 <span className="text-blue-200/50 font-bold ml-2">/mese</span>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium text-blue-50 italic">🚀 Passaporti Illimitati</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-blue-50 italic">🚀 Analytics Avanzate</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-blue-50 italic">🚀 QR Code Dinamici</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-blue-50 italic">🚀 Supporto Prioritario</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-blue-50 italic">🚀 Passaporti Illimitati</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-blue-50 italic">🚀 Analytics Avanzate</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-blue-50 italic">🚀 QR Code Dinamici</li>
               </ul>
             </div>
-            <Link href="/register" className="w-full text-center py-4 rounded-2xl bg-[#0062ff] text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
+            <Link href="/register" className="w-full text-center py-4 rounded-2xl bg-[#0062ff] text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all">
               Scegli Business
             </Link>
           </div>
 
           {/* Piano Enterprise */}
-          <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col justify-between hover:border-blue-100 transition-all">
+          <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group">
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-4 py-2 rounded-full">Enterprise</span>
               <div className="mt-6 mb-8">
-                <span className="text-4xl font-black tracking-tighter italic">Custom</span>
+                <span className="text-5xl font-black tracking-tighter italic">Custom</span>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">🛠️ Accesso API illimitato</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">🛠️ Integrazione ERP/SAP</li>
-                <li className="flex items-center gap-2 text-sm font-medium text-gray-600 italic">🛠️ White-labeling</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-gray-600 italic"><span className="text-blue-500 font-bold">🛠</span> Accesso API illimitato</li>
+                <li className="flex items-center gap-3 text-sm font-medium text-gray-600 italic"><span className="text-blue-500 font-bold">🛠</span> Integrazione ERP/SAP</li>
               </ul>
             </div>
-            <a href="mailto:sales@tracepass.com" className="w-full text-center py-4 rounded-2xl border-2 border-gray-200 font-black uppercase text-[10px] tracking-widest text-gray-400 hover:border-gray-900 hover:text-gray-900 transition-all">
+            <a href="mailto:sales@tracepass.com" className="w-full text-center py-4 rounded-2xl border-2 border-gray-200 font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover:border-gray-900 group-hover:text-gray-900 transition-all">
               Contattaci
             </a>
           </div>
