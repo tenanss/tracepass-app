@@ -6,7 +6,30 @@ import React from 'react';
 export default function HomePage() {
 
 const [isAnnual, setIsAnnual] = React.useState(true);
+const handleCheckout = async () => {
+    //  ID prezzi Stripe 
+    const STRIPE_MONTHLY_ID = "price_1T28vyE7LrcUGUCEt5fI9g2t"; 
+    const STRIPE_YEARLY_ID = "price_1T28vyE7LrcUGUCEo593b8v5";
 
+    const selectedPriceId = isAnnual ? STRIPE_YEARLY_ID : STRIPE_MONTHLY_ID;
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: selectedPriceId }),
+      });
+
+      const data = await response.json();
+      
+      if (data.sessionId) {
+        window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
+      }
+    } catch (err) {
+      console.error("Errore Stripe:", err);
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans text-gray-900 selection:bg-blue-100">
       
@@ -224,9 +247,13 @@ const [isAnnual, setIsAnnual] = React.useState(true);
                 <li className="flex items-center gap-3 text-sm font-medium text-blue-50 italic">🚀 QR Code Dinamici</li>
               </ul>
             </div>
-            <Link href="/register" className="w-full text-center py-4 rounded-2xl bg-[#0062ff] text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all">
-              Scegli Business
-            </Link>
+{/* Sostituisci il Link con un Button per attivare la funzione */}
+<button 
+  onClick={handleCheckout} 
+  className="w-full text-center py-4 rounded-2xl bg-[#0062ff] text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
+>
+  Scegli Business
+</button>
           </div>
 
           {/* Piano Enterprise */}
