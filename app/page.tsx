@@ -12,15 +12,20 @@ export default function HomePage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-400/5 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* Navbar Minimal */}
-      <nav className="relative flex justify-between items-center p-8 max-w-7xl mx-auto z-10">
-        <h1 className="text-2xl font-black italic tracking-tighter">
+{/* Navbar Minimal - Fix Definitivo Mobile */}
+      <nav className="relative flex justify-between items-center p-4 md:p-8 max-w-7xl mx-auto z-50 gap-2">
+        <h1 className="text-lg md:text-2xl font-black italic tracking-tighter flex-shrink-0">
           <span className="text-gray-900 uppercase">TRACE</span>
           <span className="text-[#0062ff] uppercase">PASS</span>
         </h1>
-        <div className="flex items-center gap-6">
-            <Link href="/login" className="text-sm font-black uppercase tracking-widest text-gray-500 hover:text-[#0062ff] transition-colors">Login</Link>
-            <Link href="/register" className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-[#0062ff] transition-all shadow-xl shadow-gray-200 active:scale-95">
+        
+        <div className="flex items-center gap-2 md:gap-6">
+            {/* Usiamo 'hidden md:block' per essere sicuri che sparisca su tutti i telefoni */}
+            <Link href="/login" className="hidden md:block text-xs md:text-sm font-black uppercase tracking-widest text-gray-500 hover:text-[#0062ff] transition-colors">
+              Login
+            </Link>
+            
+            <Link href="/register" className="bg-gray-900 text-white px-4 py-2.5 md:px-8 md:py-3 rounded-xl md:rounded-2xl font-black uppercase text-[9px] md:text-[10px] tracking-widest hover:bg-[#0062ff] transition-all shadow-lg active:scale-95 whitespace-nowrap">
               Get Started
             </Link>
         </div>
