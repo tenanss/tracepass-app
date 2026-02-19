@@ -10,7 +10,7 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isPrintMode, setIsPrintMode] = useState(false) // Stato per la modalità stampa
+  const [isPrintMode, setIsPrintMode] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   
   const [newProduct, setNewProduct] = useState({ 
@@ -30,8 +30,38 @@ export default function DashboardPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  // --- LOGICA DI PROTEZIONE DASHBOARD ---
   useEffect(() => {
-    fetchProducts()
+    const checkAuthAndSub = async () => {
+      // 1. Controlla se l'utente è loggato
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        router.push('/login')
+        return
+      }
+
+      // 2. Controlla l'abbonamento su Supabase
+      const { data: sub, error } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('email', session.user.email)
+        .single()
+
+// Se l'email è la tua, salta il controllo del pagamento (solo per sviluppo)
+const isDevAdmin = session.user.email === 'tenanssimone@outlook.com'; // <--- MIA EMAIL ADMIN 
+
+if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
+  console.log("Accesso negato. Reindirizzamento al pricing...");
+  router.push('/#pricing');
+  return;
+}
+
+      // 3. Se tutto ok, carica i prodotti
+      fetchProducts()
+    }
+
+    checkAuthAndSub()
   }, [])
 
   const fetchProducts = async () => {
@@ -174,7 +204,7 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto p-8">
         <div className="mb-12">
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Benvenuto, Admin.</h2>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Benvenuto nell'Area Aziendale.</h2>
           <p className="text-slate-500 font-medium italic text-sm">Digital Product Passport System</p>
         </div>
 
@@ -224,6 +254,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* MODALE RIMASTO INVARIATO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
           <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300 text-left">
