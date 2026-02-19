@@ -64,14 +64,16 @@ export default function HomePage() {
         <div className="bg-blue-50 text-[#0062ff] text-[10px] font-black px-4 py-2 rounded-full mb-6 uppercase tracking-[0.3em]">
           Ecodesign for Sustainable Products Regulation
         </div>
-        <h2 className="text-6xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9] text-slate-900">
-          Il futuro è <br /> 
-          <span className="text-[#0062ff] italic">trasparente.</span>
-        </h2>
-        <p className="max-w-2xl text-xl text-gray-500 mb-12 font-medium leading-relaxed">
-          TracePass è l'infrastruttura definitiva per il <span className="text-gray-900 font-bold italic">Digital Product Passport 2026</span>. 
-          Trasforma la conformità normativa in un vantaggio competitivo.
-        </p>
+{/* Nuovo Titolo H2 per Produttori */}
+<h2 className="text-6xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9] text-slate-900">
+  Il Passaporto Digitale <br />
+  per i <span className="text-[#0062ff] italic">tuoi prodotti.</span>
+</h2>
+
+{/* Nuovo Paragrafo Descrittivo */}
+<p className="max-w-2xl text-xl text-gray-500 mb-12 font-medium leading-relaxed">
+  Proteggi l'autenticità del tuo brand. TracePass permette ai produttori di certificare ogni lotto, eliminando la contraffazione e digitalizzando la tracciabilità per il cliente finale.
+</p>
         <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/register" className="bg-[#0062ff] text-white px-10 py-5 rounded-[2rem] text-xs font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-200">
               Crea il tuo primo DPP
@@ -89,25 +91,25 @@ export default function HomePage() {
       <section className="relative max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-6 z-10">
         <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border border-white hover:border-blue-100 transition-all group">
           <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl mb-8 group-hover:scale-110 transition-transform">🛠️</div>
-          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Repair Score</h3>
+          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Anticontraffazione Garantita</h3>
           <p className="text-gray-500 font-medium leading-relaxed">
-            Calcolo istantaneo dell'indice di riparabilità secondo i nuovi standard UE. Documentazione tecnica sempre accessibile.
+            Ogni prodotto è dotato di un passaporto digitale unico, con QR code dinamico e autenticazione crittografica per garantire l'autenticità.
           </p>
         </div>
 
         <div className="bg-slate-900 p-10 rounded-[3.5rem] shadow-2xl text-white transform md:-translate-y-4">
           <div className="w-12 h-12 bg-[#0062ff] rounded-2xl flex items-center justify-center text-2xl mb-8">🌿</div>
-          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Eco-Tracking</h3>
+          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Tracciabilità Trasparente</h3>
           <p className="text-blue-100/60 font-medium leading-relaxed">
-            Monitoraggio preciso dell'impronta di carbonio e della composizione chimica REACH per ogni lotto di produzione.
+            Mostra ai tuoi clienti l'intero ciclo di vita del prodotto, dall'origine dei materiali alla destinazione finale, promuovendo la fiducia e la sostenibilità.
           </p>
         </div>
 
         <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border border-white hover:border-blue-100 transition-all group">
           <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-2xl mb-8 group-hover:scale-110 transition-transform">♻️</div>
-          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Circular Economy</h3>
+          <h3 className="text-xl font-black mb-4 uppercase italic tracking-tighter">Connessione Diretta</h3>
           <p className="text-gray-500 font-medium leading-relaxed">
-            Istruzioni per il fine-vita e canali di riciclo dedicati. Rendi il tuo prodotto eterno attraverso i dati.
+            Aggiorna in tempo reale le informazioni del passaporto digitale, consentendo ai consumatori di accedere a dati aggiornati su riparabilità, riciclabilità e opzioni di smaltimento.
           </p>
         </div>
       </section>
