@@ -175,7 +175,7 @@ export default function HomePage() {
             
             <div className="w-full flex justify-center md:justify-start">
               <Link href="/register" className="bg-gray-900 text-white px-10 py-5 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] hover:bg-[#0062ff] transition-all shadow-xl shadow-gray-200 active:scale-95">
-                Inizia la trasformazione
+                Inizia Ora
               </Link>
             </div>
           </div>
