@@ -21,13 +21,14 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    // Questo è il pezzo fondamentale!
+    emailRedirectTo: `${window.location.origin}/auth/confirm`,
+  },
+})
 
     if (error) {
       setError(error.message);
