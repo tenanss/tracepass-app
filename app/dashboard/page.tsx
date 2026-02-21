@@ -5,8 +5,20 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import { QRCodeSVG } from 'qrcode.react'
 
+// 1. DEFINIZIONE LIMITI PIANI
+const PLAN_LIMITS = {
+  starter: 3,
+  business: 20,
+  enterprise: 9999
+};
+
 export default function DashboardPage() {
   const router = useRouter()
+  
+  // STATI PER LA GESTIONE QUOTA
+  const [planType, setPlanType] = useState<string>('starter')
+  const [canAddProduct, setCanAddProduct] = useState<boolean>(true)
+  
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -30,10 +42,41 @@ export default function DashboardPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // --- LOGICA DI PROTEZIONE DASHBOARD ---
+  // Definizione Email Admin per bypass
+  const adminEmail = 'tenanssimone@outlook.com';
+
+  // --- FUNZIONE PER GESTIRE L'UPGRADE CON STRIPE ---
+  const handleUpgrade = async (period: 'monthly' | 'yearly') => {
+    const priceIds = {
+      monthly: 'price_1T28vyE7LrcUGUCEt5fI9g2t', // <---  ID Mensile
+      yearly: 'price_1T28vyE7LrcUGUCEo593b8v5'   // <---  ID Annuale
+    };
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          priceId: priceIds[period] 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Errore Stripe: " + data.error);
+      }
+    } catch (err) {
+      console.error("Errore chiamata API checkout:", err);
+      alert("Errore di connessione. Riprova.");
+    }
+  };
+
+  // --- LOGICA DI PROTEZIONE DASHBOARD & LIMITI ---
   useEffect(() => {
     const checkAuthAndSub = async () => {
-      // 1. Controlla se l'utente è loggato
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
@@ -41,34 +84,53 @@ export default function DashboardPage() {
         return
       }
 
-      // 2. Controlla l'abbonamento su Supabase
       const { data: sub, error } = await supabase
         .from('subscriptions')
-        .select('status')
+        .select('status, plan_type')
         .eq('email', session.user.email)
-        .single()
+        .single() as any 
 
-// Se l'email è la tua, salta il controllo del pagamento (solo per sviluppo)
-const isDevAdmin = session.user.email === 'tenanssimone@outlook.com'; // <--- MIA EMAIL ADMIN 
+      const isDevAdmin = session.user.email === adminEmail
 
-if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
-  console.log("Accesso negato. Reindirizzamento al pricing...");
-  router.push('/#pricing');
-  return;
-}
+      if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
+        console.log("Accesso negato. Reindirizzamento al pricing...")
+        router.push('/#pricing')
+        return
+      }
 
-      // 3. Se tutto ok, carica i prodotti
-      fetchProducts()
+      const currentPlan = sub?.plan_type || 'starter'
+      setPlanType(currentPlan)
+
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (productsData) {
+        setProducts(productsData)
+        const limit = PLAN_LIMITS[currentPlan as keyof typeof PLAN_LIMITS] || 3
+        setCanAddProduct(isDevAdmin || productsData.length < limit)
+      }
+
+      setLoading(false)
     }
 
     checkAuthAndSub()
-  }, [])
+  }, [router])
 
-  const fetchProducts = async () => {
+  const refreshData = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    if (data) setProducts(data)
-    setLoading(false)
+    if (data) {
+      setProducts(data)
+      const isDevAdmin = session?.user?.email === adminEmail
+      const limit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3
+      setCanAddProduct(isDevAdmin || data.length < limit)
+    }
   }
+
+  const isLimitReached = products.length >= (PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3);
+  const showRedAlert = isLimitReached;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'tech_doc_url' | 'video_url') => {
     const file = e.target.files?.[0]
@@ -115,7 +177,7 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
     if (confirm("Sei sicuro di voler eliminare questo prodotto?")) {
       const { error } = await supabase.from('products').delete().eq('id', id)
       if (error) alert(error.message)
-      else fetchProducts()
+      else refreshData()
     }
   }
 
@@ -152,13 +214,12 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
         carbon_footprint: '', substances_reach: '', recycling_instructions: '',
         tech_doc_url: '', video_url: '' 
       })
-      fetchProducts()
+      refreshData()
     }
   }
 
   if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 
-  // --- VISTA STAMPA (SERIE) ---
   if (isPrintMode) {
     return (
       <div className="min-h-screen bg-white p-10">
@@ -187,10 +248,8 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
     )
   }
 
-  // --- VISTA DASHBOARD NORMALE ---
   return (
     <div className="min-h-screen bg-[#f1f3f5] font-sans text-slate-900 text-left">
-      
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-8 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-black italic tracking-tighter text-slate-800 uppercase">
@@ -205,14 +264,30 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
       <main className="max-w-7xl mx-auto p-8">
         <div className="mb-12">
           <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Benvenuto nell'Area Aziendale.</h2>
-          <p className="text-slate-500 font-medium italic text-sm">Digital Product Passport System</p>
+          <p className="text-slate-500 font-medium italic text-sm uppercase">Digital Product Passport System — Piano: {planType}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <button onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:'', tech_doc_url: '', video_url: ''}); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 transition-all flex flex-col justify-between min-h-[180px] group text-left">
-            <span className="text-3xl group-hover:rotate-90 transition-transform w-fit">+</span>
-            <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
-          </button>
+          {canAddProduct ? (
+            <button 
+              onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:'', tech_doc_url: '', video_url: ''}); setIsModalOpen(true); }} 
+              className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 transition-all flex flex-col justify-between min-h-[180px] group text-left"
+            >
+              <span className="text-3xl group-hover:rotate-90 transition-transform w-fit">+</span>
+              <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
+            </button>
+          ) : (
+            <div className="md:col-span-1 bg-amber-100 p-8 rounded-[2.5rem] text-amber-800 shadow-sm flex flex-col justify-between min-h-[180px] text-left border border-amber-200">
+              <span className="text-3xl">⚠️</span>
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest block mb-1">Limite Raggiunto</span>
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => handleUpgrade('monthly')} className="text-[10px] font-black underline uppercase text-amber-900 text-left hover:text-black transition-colors">Business Mensile</button>
+                  <button onClick={() => handleUpgrade('yearly')} className="text-[10px] font-black underline uppercase text-amber-900 text-left hover:text-black transition-colors">Business Annuale</button>
+                </div>
+              </div>
+            </div>
+          )}
           
           <button onClick={() => setIsPrintMode(true)} className="md:col-span-1 bg-slate-800 p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-black transition-all flex flex-col justify-between min-h-[180px] text-left">
             <span className="text-3xl">⎙</span>
@@ -220,8 +295,10 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
           </button>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-            <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Totale Archivio</span>
-            <span className="text-5xl font-black text-slate-900 italic leading-none">{products.length}</span>
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Slot Occupati</span>
+            <span className={`text-5xl font-black italic leading-none transition-colors duration-300 ${showRedAlert ? 'text-red-500' : 'text-slate-900'}`}>
+              {products.length}/{PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3}
+            </span>
           </div>
         </div>
 
@@ -254,7 +331,7 @@ if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
         </div>
       </main>
 
-      {/* MODALE RIMASTO INVARIATO */}
+      {/* MODALE */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
           <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300 text-left">
