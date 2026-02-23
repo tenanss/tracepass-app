@@ -44,6 +44,35 @@ export default function DashboardPage() {
 
   const adminEmail = 'tenanssimone@outlook.com';
 
+  // --- FUNZIONE REFRESH POTENZIATA (Sincronizza prodotti e piano senza F5) ---
+  const refreshData = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    // 1. Carica i prodotti dell'utente
+    const { data: productsData } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+
+    // 2. Carica il piano attuale (per gestire il passaggio a Business)
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan_type')
+      .eq('email', session.user.email)
+      .maybeSingle()
+
+    if (productsData) setProducts(productsData)
+    
+    if (sub) {
+      setPlanType(sub.plan_type)
+      const isDevAdmin = session.user.email === adminEmail
+      const limit = PLAN_LIMITS[sub.plan_type as keyof typeof PLAN_LIMITS] || 3
+      setCanAddProduct(isDevAdmin || productsData!.length < limit)
+    }
+  }
+
   const handleUpgrade = async (period: 'monthly' | 'yearly') => {
     const priceIds = {
       monthly: 'price_1T28vyE7LrcUGUCEt5fI9g2t',
@@ -83,6 +112,7 @@ export default function DashboardPage() {
 
       const isDevAdmin = session.user.email === adminEmail
 
+      // Automatismo per nuovi utenti se il trigger non è scattato
       if (!sub && !subError && !isDevAdmin) {
         const { data: newSub, error: insertError } = await supabase
           .from('subscriptions')
@@ -94,10 +124,7 @@ export default function DashboardPage() {
           .select()
           .single()
 
-        if (!insertError) {
-          sub = newSub
-          console.log("Nuovo utente sincronizzato come Starter.")
-        }
+        if (!insertError) sub = newSub
       }
 
       if (!isDevAdmin && sub && sub.status !== 'active') {
@@ -105,57 +132,19 @@ export default function DashboardPage() {
         return
       }
 
-      const currentPlan = sub?.plan_type || 'starter'
-      setPlanType(currentPlan)
-
-      // MODIFICA: Carichiamo solo i prodotti dell'utente loggato
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', session.user.id) // Filtro fondamentale
-        .order('created_at', { ascending: false })
-
-      if (productsData) {
-        setProducts(productsData)
-        const limit = PLAN_LIMITS[currentPlan as keyof typeof PLAN_LIMITS] || 3
-        setCanAddProduct(isDevAdmin || productsData.length < limit)
-      }
-
+      // Sincronizziamo i dati iniziali
+      await refreshData()
       setLoading(false)
     }
 
     checkAuthAndSub()
   }, [router])
 
-  const refreshData = async () => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
-
-    if (data) {
-      setProducts(data)
-      const isDevAdmin = session?.user?.email === adminEmail
-      const limit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3
-      setCanAddProduct(isDevAdmin || data.length < limit)
-    }
-  }
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // 1. Recuperiamo la sessione per l'ID utente
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      alert("Sessione scaduta. Riaccedi.")
-      return
-    }
-
-    // 2. Prepariamo i dati includendo l'user_id richiesto dalla tabella
     const productData = { 
       name: newProduct.name,
       repair_score: parseInt(newProduct.repair_score),
@@ -166,7 +155,7 @@ export default function DashboardPage() {
       recycling_instructions: newProduct.recycling_instructions,
       tech_doc_url: newProduct.tech_doc_url,
       video_url: newProduct.video_url,
-      user_id: session.user.id // <-- AGGIUNTO: Risolve l'errore di permessi
+      user_id: session.user.id 
     }
 
     let error;
@@ -188,12 +177,18 @@ export default function DashboardPage() {
         carbon_footprint: '', substances_reach: '', recycling_instructions: '',
         tech_doc_url: '', video_url: '' 
       })
-      refreshData()
+      await refreshData() // Aggiorna UI e contatore subito
     }
   }
 
-  // ... (Tutto il resto del componente rimane uguale)
-  
+  const handleDelete = async (id: string) => {
+    if (confirm("Sei sicuro di voler eliminare questo prodotto?")) {
+      const { error } = await supabase.from('products').delete().eq('id', id)
+      if (error) alert("Errore eliminazione: " + error.message)
+      else await refreshData() // Ricarica prodotti e riapre slot
+    }
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'tech_doc_url' | 'video_url') => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -235,18 +230,11 @@ export default function DashboardPage() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Sei sicuro di voler eliminare questo prodotto?")) {
-      const { error } = await supabase.from('products').delete().eq('id', id)
-      if (error) alert(error.message)
-      else refreshData()
-    }
-  }
-
   const showRedAlert = products.length >= (PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3);
 
   if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 
+  // --- MODALITÀ STAMPA (DESIGN ORIGINALE) ---
   if (isPrintMode) {
     return (
       <div className="min-h-screen bg-white p-10">
@@ -260,7 +248,6 @@ export default function DashboardPage() {
             <button onClick={() => setIsPrintMode(false)} className="bg-white/10 px-6 py-2 rounded-xl text-[10px] font-black uppercase">Esci</button>
           </div>
         </div>
-        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((p) => (
             <div key={p.id} className="border border-slate-200 p-6 flex flex-col items-center text-center rounded-xl bg-white shadow-sm page-break-inside-avoid">
@@ -329,6 +316,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* LISTA PRODOTTI (DESIGN ORIGINALE) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
           {products.map((p) => (
             <div key={p.id} className="bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col justify-between min-h-[420px]">
@@ -358,7 +346,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* MODALE */}
+      {/* MODALE (DESIGN ORIGINALE) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
           <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300 text-left">
