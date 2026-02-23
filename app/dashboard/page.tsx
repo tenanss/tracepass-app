@@ -42,39 +42,30 @@ export default function DashboardPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Definizione Email Admin per bypass
   const adminEmail = 'tenanssimone@outlook.com';
 
-  // --- FUNZIONE PER GESTIRE L'UPGRADE CON STRIPE ---
   const handleUpgrade = async (period: 'monthly' | 'yearly') => {
     const priceIds = {
-      monthly: 'price_1T28vyE7LrcUGUCEt5fI9g2t', // <---  ID Mensile
-      yearly: 'price_1T28vyE7LrcUGUCEo593b8v5'   // <---  ID Annuale
+      monthly: 'price_1T28vyE7LrcUGUCEt5fI9g2t',
+      yearly: 'price_1T28vyE7LrcUGUCEo593b8v5'
     };
 
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          priceId: priceIds[period] 
-        }),
+        body: JSON.stringify({ priceId: priceIds[period] }),
       });
       
       const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Errore Stripe: " + data.error);
-      }
+      if (data.url) window.location.href = data.url;
+      else alert("Errore Stripe: " + data.error);
     } catch (err) {
       console.error("Errore chiamata API checkout:", err);
       alert("Errore di connessione. Riprova.");
     }
   };
 
-  // --- LOGICA DI PROTEZIONE DASHBOARD & LIMITI ---
   useEffect(() => {
     const checkAuthAndSub = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -84,16 +75,32 @@ export default function DashboardPage() {
         return
       }
 
-      const { data: sub, error } = await supabase
+      let { data: sub, error: subError } = await supabase
         .from('subscriptions')
         .select('status, plan_type')
         .eq('email', session.user.email)
-        .single() as any 
+        .maybeSingle()
 
       const isDevAdmin = session.user.email === adminEmail
 
-      if (!isDevAdmin && (error || !sub || sub.status !== 'active')) {
-        console.log("Accesso negato. Reindirizzamento al pricing...")
+      if (!sub && !subError && !isDevAdmin) {
+        const { data: newSub, error: insertError } = await supabase
+          .from('subscriptions')
+          .insert([{
+            email: session.user.email,
+            plan_type: 'starter',
+            status: 'active'
+          }])
+          .select()
+          .single()
+
+        if (!insertError) {
+          sub = newSub
+          console.log("Nuovo utente sincronizzato come Starter.")
+        }
+      }
+
+      if (!isDevAdmin && sub && sub.status !== 'active') {
         router.push('/#pricing')
         return
       }
@@ -101,9 +108,11 @@ export default function DashboardPage() {
       const currentPlan = sub?.plan_type || 'starter'
       setPlanType(currentPlan)
 
+      // MODIFICA: Carichiamo solo i prodotti dell'utente loggato
       const { data: productsData } = await supabase
         .from('products')
         .select('*')
+        .eq('user_id', session.user.id) // Filtro fondamentale
         .order('created_at', { ascending: false })
 
       if (productsData) {
@@ -120,7 +129,14 @@ export default function DashboardPage() {
 
   const refreshData = async () => {
     const { data: { session } } = await supabase.auth.getSession()
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
+    if (!session) return
+
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+
     if (data) {
       setProducts(data)
       const isDevAdmin = session?.user?.email === adminEmail
@@ -129,9 +145,55 @@ export default function DashboardPage() {
     }
   }
 
-  const isLimitReached = products.length >= (PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3);
-  const showRedAlert = isLimitReached;
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // 1. Recuperiamo la sessione per l'ID utente
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      alert("Sessione scaduta. Riaccedi.")
+      return
+    }
 
+    // 2. Prepariamo i dati includendo l'user_id richiesto dalla tabella
+    const productData = { 
+      name: newProduct.name,
+      repair_score: parseInt(newProduct.repair_score),
+      origin: newProduct.origin,
+      material_composition: newProduct.material_composition,
+      carbon_footprint: newProduct.carbon_footprint,
+      substances_reach: newProduct.substances_reach,
+      recycling_instructions: newProduct.recycling_instructions,
+      tech_doc_url: newProduct.tech_doc_url,
+      video_url: newProduct.video_url,
+      user_id: session.user.id // <-- AGGIUNTO: Risolve l'errore di permessi
+    }
+
+    let error;
+    if (editingId) {
+      const { error: err } = await supabase.from('products').update(productData).eq('id', editingId)
+      error = err
+    } else {
+      const { error: err } = await supabase.from('products').insert([productData])
+      error = err
+    }
+
+    if (error) {
+      alert("Errore salvataggio: " + error.message)
+    } else {
+      setIsModalOpen(false)
+      setEditingId(null)
+      setNewProduct({ 
+        name: '', repair_score: '5', origin: '', material_composition: '', 
+        carbon_footprint: '', substances_reach: '', recycling_instructions: '',
+        tech_doc_url: '', video_url: '' 
+      })
+      refreshData()
+    }
+  }
+
+  // ... (Tutto il resto del componente rimane uguale)
+  
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'tech_doc_url' | 'video_url') => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -154,7 +216,7 @@ export default function DashboardPage() {
       .getPublicUrl(filePath)
 
     setNewProduct({ ...newProduct, [field]: publicUrl })
-    alert("File caricato e collegato!")
+    alert("File caricato correttamente!")
   }
 
   const handleEditClick = (product: any) => {
@@ -181,42 +243,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const productData = { 
-      name: newProduct.name,
-      repair_score: parseInt(newProduct.repair_score),
-      origin: newProduct.origin,
-      material_composition: newProduct.material_composition,
-      carbon_footprint: newProduct.carbon_footprint,
-      substances_reach: newProduct.substances_reach,
-      recycling_instructions: newProduct.recycling_instructions,
-      tech_doc_url: newProduct.tech_doc_url,
-      video_url: newProduct.video_url
-    }
-
-    let error;
-    if (editingId) {
-      const { error: err } = await supabase.from('products').update(productData).eq('id', editingId)
-      error = err
-    } else {
-      const { error: err } = await supabase.from('products').insert([productData])
-      error = err
-    }
-
-    if (error) {
-      alert("Errore: " + error.message)
-    } else {
-      setIsModalOpen(false)
-      setEditingId(null)
-      setNewProduct({ 
-        name: '', repair_score: '5', origin: '', material_composition: '', 
-        carbon_footprint: '', substances_reach: '', recycling_instructions: '',
-        tech_doc_url: '', video_url: '' 
-      })
-      refreshData()
-    }
-  }
+  const showRedAlert = products.length >= (PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3);
 
   if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 

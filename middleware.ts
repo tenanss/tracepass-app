@@ -26,22 +26,26 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: Usiamo getUser() che è più lento ma verifica l'autenticità lato server
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Se l'utente cerca di andare in dashboard ma non è loggato
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  const isHomePage = request.nextUrl.pathname === '/'
+  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard')
+
+  // 1. Se loggato e prova ad andare su Home o Login -> Dashboard
+  if (user && (isHomePage || isLoginPage)) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Se l'utente è già loggato e prova a tornare al login, mandalo in dashboard
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // 2. Se NON loggato e prova ad andare in Dashboard -> Login
+  if (!user && isDashboardPage) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  // Aggiunto '/' per intercettare la home e i file statici (esclusi con regex)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
