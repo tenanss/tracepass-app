@@ -69,7 +69,7 @@ export default function DashboardPage() {
       setPlanType(sub.plan_type)
       const isDevAdmin = session.user.email === adminEmail
       const limit = PLAN_LIMITS[sub.plan_type as keyof typeof PLAN_LIMITS] || 3
-      setCanAddProduct(isDevAdmin || productsData!.length < limit)
+      setCanAddProduct(isDevAdmin || (productsData ? productsData.length < limit : true))
     }
   }
 
@@ -95,7 +95,22 @@ export default function DashboardPage() {
     }
   };
 
+  // --- EFFETTO PER IL RITORNO DA STRIPE ---
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('success')) {
+      const timer = setTimeout(() => {
+        refreshData();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 2000); // 2 secondi per dare tempo al webhook
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // --- EFFETTO PRINCIPALE + REALTIME ---
+  useEffect(() => {
+    let subscriptionChannel: any;
+
     const checkAuthAndSub = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -135,9 +150,30 @@ export default function DashboardPage() {
       // Sincronizziamo i dati iniziali
       await refreshData()
       setLoading(false)
+
+      // ATTIVAZIONE REALTIME: ascolta cambi sulla tabella subscriptions per l'utente corrente
+      subscriptionChannel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'subscriptions',
+            filter: `email=eq.${session.user.email}`
+          },
+          () => {
+            refreshData();
+          }
+        )
+        .subscribe()
     }
 
     checkAuthAndSub()
+
+    return () => {
+      if (subscriptionChannel) supabase.removeChannel(subscriptionChannel)
+    }
   }, [router])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -177,7 +213,7 @@ export default function DashboardPage() {
         carbon_footprint: '', substances_reach: '', recycling_instructions: '',
         tech_doc_url: '', video_url: '' 
       })
-      await refreshData() // Aggiorna UI e contatore subito
+      await refreshData() 
     }
   }
 
@@ -185,7 +221,7 @@ export default function DashboardPage() {
     if (confirm("Sei sicuro di voler eliminare questo prodotto?")) {
       const { error } = await supabase.from('products').delete().eq('id', id)
       if (error) alert("Errore eliminazione: " + error.message)
-      else await refreshData() // Ricarica prodotti e riapre slot
+      else await refreshData() 
     }
   }
 
@@ -197,7 +233,7 @@ export default function DashboardPage() {
     const fileName = `${Math.random()}.${fileExt}`
     const filePath = `${fileName}`
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('product-assets')
       .upload(filePath, file)
 
@@ -234,7 +270,7 @@ export default function DashboardPage() {
 
   if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 
-  // --- MODALITÀ STAMPA (DESIGN ORIGINALE) ---
+  // --- MODALITÀ STAMPA ---
   if (isPrintMode) {
     return (
       <div className="min-h-screen bg-white p-10">
@@ -316,7 +352,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* LISTA PRODOTTI (DESIGN ORIGINALE) */}
+        {/* LISTA PRODOTTI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
           {products.map((p) => (
             <div key={p.id} className="bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all p-8 flex flex-col justify-between min-h-[420px]">
@@ -346,7 +382,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* MODALE (DESIGN ORIGINALE) */}
+      {/* MODALE */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
           <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300 text-left">
