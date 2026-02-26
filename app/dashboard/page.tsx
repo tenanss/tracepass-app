@@ -86,16 +86,36 @@ export default function DashboardPage() {
     init()
   }, [router, refreshData])
 
-  const handleSave = async (e: React.FormEvent) => {
+const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const productData = { ...newProduct, repair_score: parseInt(newProduct.repair_score), user_id: session.user.id }
-    if (editingId) await supabase.from('products').update(productData).eq('id', editingId)
-    else await supabase.from('products').insert([productData])
-    setIsModalOpen(false); setEditingId(null);
+
+    const productData = { 
+      name: newProduct.name,
+      origin: newProduct.origin,
+      material_composition: newProduct.material_composition,
+      carbon_footprint: newProduct.carbon_footprint,
+      substances_reach: newProduct.substances_reach,
+      recycling_instructions: newProduct.recycling_instructions,
+      tech_doc_url: newProduct.tech_doc_url, 
+      video_url: newProduct.video_url,
+      repair_score: parseInt(newProduct.repair_score) || 5,
+      user_id: session.user.id 
+    }
+
+    // --- PARTE CHE MANCAVA NELLA TUA FOTO ---
+    if (editingId) {
+      await supabase.from('products').update(productData).eq('id', editingId)
+    } else {
+      await supabase.from('products').insert([productData])
+    }
+
+    setIsModalOpen(false)
+    setEditingId(null)
     setNewProduct({ name: '', repair_score: '5', origin: '', material_composition: '', carbon_footprint: '', substances_reach: '', recycling_instructions: '', tech_doc_url: '', video_url: '' })
     refreshData()
+    // ---------------------------------------
   }
 
   const handleDelete = async (id: string) => {
