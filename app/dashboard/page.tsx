@@ -92,15 +92,14 @@ const handleSave = async (e: React.FormEvent) => {
     if (!session) return
 
 const productData = { 
-      name: newProduct.name,
-      origin: newProduct.origin,
-      material_composition: newProduct.material_composition,
-      carbon_footprint: newProduct.carbon_footprint,
-      substances_reach: newProduct.substances_reach,
-      recycling_instructions: newProduct.recycling_instructions,
-      tech_doc_url: newProduct.tech_doc_url, 
-      technical_sheet: newProduct.tech_doc_url, // Mandiamo lo stesso valore a entrambi per sicurezza
-      video_url: newProduct.video_url,
+      name: newProduct.name || '',
+      origin: newProduct.origin || '',
+      material_composition: newProduct.material_composition || '',
+      carbon_footprint: newProduct.carbon_footprint || '',
+      substances_reach: newProduct.substances_reach || '',
+      recycling_instructions: newProduct.recycling_instructions || '',
+      tech_doc_url: newProduct.tech_doc_url || '', // Usiamo solo questa!
+      video_url: newProduct.video_url || '',
       repair_score: parseInt(newProduct.repair_score) || 5,
       user_id: session.user.id 
     }
