@@ -44,19 +44,17 @@ export default function DashboardPage() {
 
   const adminEmail = 'tenanssimone@outlook.com';
 
-  // --- FUNZIONE REFRESH POTENZIATA (Sincronizza prodotti e piano senza F5) ---
+  // --- FUNZIONE REFRESH POTENZIATA ---
   const refreshData = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
-    // 1. Carica i prodotti dell'utente
     const { data: productsData } = await supabase
       .from('products')
       .select('*')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
-    // 2. Carica il piano attuale (per gestire il passaggio a Business)
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('plan_type')
@@ -95,19 +93,17 @@ export default function DashboardPage() {
     }
   };
 
-  // --- EFFETTO PER IL RITORNO DA STRIPE ---
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     if (query.get('success')) {
       const timer = setTimeout(() => {
         refreshData();
         window.history.replaceState({}, document.title, window.location.pathname);
-      }, 2000); // 2 secondi per dare tempo al webhook
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, []);
 
-  // --- EFFETTO PRINCIPALE + REALTIME ---
   useEffect(() => {
     let subscriptionChannel: any;
 
@@ -127,7 +123,6 @@ export default function DashboardPage() {
 
       const isDevAdmin = session.user.email === adminEmail
 
-      // Automatismo per nuovi utenti se il trigger non è scattato
       if (!sub && !subError && !isDevAdmin) {
         const { data: newSub, error: insertError } = await supabase
           .from('subscriptions')
@@ -147,11 +142,9 @@ export default function DashboardPage() {
         return
       }
 
-      // Sincronizziamo i dati iniziali
       await refreshData()
       setLoading(false)
 
-      // ATTIVAZIONE REALTIME: ascolta cambi sulla tabella subscriptions per l'utente corrente
       subscriptionChannel = supabase
         .channel('schema-db-changes')
         .on(
@@ -266,11 +259,12 @@ export default function DashboardPage() {
     setIsModalOpen(true)
   }
 
-  const showRedAlert = products.length >= (PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3);
+  // LOGICA COLORE ROSSO PER IL CONTATORE (Starter o Business raggiunti)
+  const currentLimit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3;
+  const showRedAlert = products.length >= currentLimit;
 
   if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse text-center">TracePass Loading...</div>
 
-  // --- MODALITÀ STAMPA ---
   if (isPrintMode) {
     return (
       <div className="min-h-screen bg-white p-10">
@@ -327,13 +321,14 @@ export default function DashboardPage() {
               <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
             </button>
           ) : (
-            <div className="md:col-span-1 bg-amber-100 p-8 rounded-[2.5rem] text-amber-800 shadow-sm flex flex-col justify-between min-h-[180px] text-left border border-amber-200">
-              <span className="text-3xl">⚠️</span>
+            /* PULSANTE GIALLO DI UPGRADE (Appare quando canAddProduct è false) */
+            <div className="md:col-span-1 bg-yellow-400 p-8 rounded-[2.5rem] text-black shadow-xl flex flex-col justify-between min-h-[180px] text-left border border-yellow-500 animate-in fade-in zoom-in duration-500">
+              <span className="text-3xl">🚀</span>
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest block mb-1">Limite Raggiunto</span>
-                <div className="flex flex-col gap-1">
-                  <button onClick={() => handleUpgrade('monthly')} className="text-[10px] font-black underline uppercase text-amber-900 text-left hover:text-black transition-colors">Business Mensile</button>
-                  <button onClick={() => handleUpgrade('yearly')} className="text-[10px] font-black underline uppercase text-amber-900 text-left hover:text-black transition-colors">Business Annuale</button>
+                <span className="text-[10px] font-black uppercase tracking-widest block mb-2 text-black/60">Limite {planType} raggiunto</span>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => handleUpgrade('monthly')} className="w-full py-2 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all text-center">Passa a Business</button>
+                  <p className="text-[8px] font-bold uppercase text-center opacity-60">Sblocca 20 Slot</p>
                 </div>
               </div>
             </div>
@@ -347,7 +342,7 @@ export default function DashboardPage() {
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Slot Occupati</span>
             <span className={`text-5xl font-black italic leading-none transition-colors duration-300 ${showRedAlert ? 'text-red-500' : 'text-slate-900'}`}>
-              {products.length}/{PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3}
+              {products.length}/{currentLimit}
             </span>
           </div>
         </div>
