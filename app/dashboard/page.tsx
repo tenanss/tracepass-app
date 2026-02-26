@@ -44,17 +44,19 @@ export default function DashboardPage() {
 
   const adminEmail = 'tenanssimone@outlook.com';
 
-  // --- FUNZIONE REFRESH POTENZIATA ---
+  // --- FUNZIONE REFRESH POTENZIATA (Corretta per il tasto Giallo) ---
   const refreshData = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
+    // 1. Carica i prodotti
     const { data: productsData } = await supabase
       .from('products')
       .select('*')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
+    // 2. Carica l'abbonamento
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('plan_type')
@@ -67,7 +69,15 @@ export default function DashboardPage() {
       setPlanType(sub.plan_type)
       const isDevAdmin = session.user.email === adminEmail
       const limit = PLAN_LIMITS[sub.plan_type as keyof typeof PLAN_LIMITS] || 3
-      setCanAddProduct(isDevAdmin || (productsData ? productsData.length < limit : true))
+      
+      // LOGICA TASTO: Se non è admin, controlla se ha raggiunto o superato il limite
+      const hasReachedLimit = productsData ? productsData.length >= limit : false
+      
+      if (isDevAdmin) {
+        setCanAddProduct(true)
+      } else {
+        setCanAddProduct(!hasReachedLimit)
+      }
     }
   }
 
@@ -259,7 +269,6 @@ export default function DashboardPage() {
     setIsModalOpen(true)
   }
 
-  // LOGICA COLORE ROSSO PER IL CONTATORE (Starter o Business raggiunti)
   const currentLimit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3;
   const showRedAlert = products.length >= currentLimit;
 
@@ -321,7 +330,6 @@ export default function DashboardPage() {
               <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
             </button>
           ) : (
-            /* PULSANTE GIALLO DI UPGRADE (Appare quando canAddProduct è false) */
             <div className="md:col-span-1 bg-yellow-400 p-8 rounded-[2.5rem] text-black shadow-xl flex flex-col justify-between min-h-[180px] text-left border border-yellow-500 animate-in fade-in zoom-in duration-500">
               <span className="text-3xl">🚀</span>
               <div>
