@@ -44,19 +44,17 @@ export default function DashboardPage() {
 
   const adminEmail = 'tenanssimone@outlook.com';
 
-  // --- FUNZIONE REFRESH POTENZIATA (Corretta per il tasto Giallo) ---
+  // --- FUNZIONE REFRESH POTENZIATA ---
   const refreshData = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
-    // 1. Carica i prodotti
     const { data: productsData } = await supabase
       .from('products')
       .select('*')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
-    // 2. Carica l'abbonamento
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('plan_type')
@@ -70,12 +68,12 @@ export default function DashboardPage() {
       const isDevAdmin = session.user.email === adminEmail
       const limit = PLAN_LIMITS[sub.plan_type as keyof typeof PLAN_LIMITS] || 3
       
-      // LOGICA TASTO: Se non è admin, controlla se ha raggiunto o superato il limite
       const hasReachedLimit = productsData ? productsData.length >= limit : false
       
       if (isDevAdmin) {
         setCanAddProduct(true)
       } else {
+        // Se ha raggiunto il limite, canAddProduct DEVE essere false per mostrare il tasto giallo
         setCanAddProduct(!hasReachedLimit)
       }
     }
@@ -321,7 +319,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          {canAddProduct ? (
+          {/* LOGICA TASTO DINAMICO: Se canAddProduct è vero mostra BLU, altrimenti GIALLO */}
+          {canAddProduct === true ? (
             <button 
               onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:'', tech_doc_url: '', video_url: ''}); setIsModalOpen(true); }} 
               className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 transition-all flex flex-col justify-between min-h-[180px] group text-left"
