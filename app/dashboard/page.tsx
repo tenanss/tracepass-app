@@ -34,21 +34,22 @@ export default function DashboardPage() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
-    // 1. PRODOTTI
+    // Forza il recupero prodotti
     const { data: productsData } = await supabase
       .from('products').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false })
 
-    // 2. ABBONAMENTO (Anti-Cache: forziamo la lettura con un parametro inutile se necessario, 
-    // ma qui usiamo semplicemente l'esecuzione fresca)
-    const { data: sub } = await supabase
+    // FORZA IL RECUPERO ABBONAMENTO - NO CACHE
+    const { data: sub, error } = await supabase
       .from('subscriptions')
       .select('plan_type')
       .eq('email', session.user.email)
-      .single() // Usiamo single per essere sicuri di beccare l'unico record aggiornato
+      .maybeSingle()
 
     if (productsData) setProducts(productsData)
-    if (sub) setPlanType(sub.plan_type)
-    
+    if (sub) {
+      console.log("PIANO AGGIORNATO RILEVATO:", sub.plan_type)
+      setPlanType(sub.plan_type)
+    }
     setLoading(false)
   }, [supabase])
 
@@ -73,11 +74,11 @@ export default function DashboardPage() {
       
       const params = new URLSearchParams(window.location.search)
       if (params.get('success')) {
-        // Se veniamo da Stripe, aspettiamo 1 secondo per dare tempo al webhook di finire
+        // Aspettiamo che il webhook lavori e forziamo il refresh
         setTimeout(() => {
           refreshData()
           router.replace('/dashboard')
-        }, 1500)
+        }, 2000)
       } else {
         refreshData()
       }
@@ -98,7 +99,10 @@ export default function DashboardPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Eliminare?")) { await supabase.from('products').delete().eq('id', id); refreshData(); }
+    if (confirm("Sei sicuro di voler eliminare il prodotto?")) {
+      await supabase.from('products').delete().eq('id', id)
+      await refreshData()
+    }
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'tech_doc_url' | 'video_url') => {
@@ -107,7 +111,7 @@ export default function DashboardPage() {
     const { error } = await supabase.storage.from('product-assets').upload(filePath, file)
     if (error) return alert(error.message)
     const { data: { publicUrl } } = supabase.storage.from('product-assets').getPublicUrl(filePath)
-    setNewProduct({ ...newProduct, [field]: publicUrl }); alert("Caricato!")
+    setNewProduct({ ...newProduct, [field]: publicUrl }); alert("File caricato correttamente!")
   }
 
   const currentLimit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3;
@@ -119,10 +123,10 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-white p-10">
         <div className="print:hidden mb-8 flex justify-between items-center bg-slate-900 p-6 rounded-2xl text-white">
-          <h2 className="font-black uppercase italic text-sm">Stampa QR ({products.length})</h2>
+          <h2 className="font-black uppercase italic">Modalità Stampa ({products.length})</h2>
           <div className="flex gap-4">
-            <button onClick={() => window.print()} className="bg-[#0062ff] px-6 py-2 rounded-xl text-[10px] font-black">STAMPA</button>
-            <button onClick={() => setIsPrintMode(false)} className="bg-white/10 px-6 py-2 rounded-xl text-[10px] font-black">ESCI</button>
+            <button onClick={() => window.print()} className="bg-[#0062ff] px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Stampa</button>
+            <button onClick={() => setIsPrintMode(false)} className="bg-white/10 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Esci</button>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-6">
@@ -146,18 +150,18 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto p-8 text-left">
         <div className="mb-12">
-          <h2 className="text-4xl font-black tracking-tight mb-2 italic">Benvenuto nell'Area Aziendale.</h2>
-          <p className="text-slate-500 font-bold text-sm uppercase">PIANO: {planType}</p>
+          <h2 className="text-4xl font-black tracking-tight mb-2 italic">Benvenuto nell'area Aziendale</h2>
+          <p className="text-slate-500 font-bold text-sm uppercase">PIANO ATTIVO: {planType}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           {isLimitReached ? (
             <div className="md:col-span-1 bg-yellow-400 p-8 rounded-[2.5rem] text-black shadow-xl flex flex-col justify-between min-h-[180px] border border-yellow-600">
               <span className="text-3xl">🚀</span>
-              <button onClick={() => handleUpgrade('monthly')} className="w-full py-2 bg-black text-white rounded-xl text-[9px] font-black uppercase">Passa a Business</button>
+              <button onClick={() => handleUpgrade('monthly')} className="w-full py-2 bg-black text-white rounded-xl text-[9px] font-black uppercase">Sblocca Piano Business</button>
             </div>
           ) : (
-            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl min-h-[180px] flex flex-col justify-between">
+            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl min-h-[180px] flex flex-col justify-between hover:bg-blue-700 transition-all">
               <span className="text-3xl">+</span>
               <span className="text-sm font-black uppercase leading-tight">Crea Nuovo<br/>Passport</span>
             </button>
@@ -199,7 +203,7 @@ export default function DashboardPage() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto text-left">
           <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto">
-            <h3 className="text-2xl font-black uppercase italic text-center mb-8">Gestione Passport</h3>
+            <h3 className="text-2xl font-black uppercase italic text-center mb-8 tracking-tighter">Gestione Passport</h3>
             <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-4">Nome Modello</label>
@@ -231,8 +235,8 @@ export default function DashboardPage() {
                   <option value="5">5/5</option><option value="4">4/5</option><option value="3">3/5</option><option value="2">2/5</option><option value="1">1/5</option>
                 </select>
               </div>
-              <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <span className="text-[9px] font-black uppercase text-[#0062ff] block mb-4 italic tracking-widest text-left">Documentazione DPP 2026</span>
+              <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mt-4">
+                <span className="text-[9px] font-black uppercase text-[#0062ff] block mb-4 italic tracking-widest">Documentazione DPP 2026</span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-[9px] font-black uppercase text-slate-400 block mb-2 ml-2">Scheda Tecnica (PDF)</label>
@@ -244,9 +248,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2 flex gap-4 mt-6">
+              <div className="md:col-span-2 flex gap-4 mt-8">
                 <button type="submit" className="flex-1 bg-[#0062ff] text-white py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-lg">Salva Passport</button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 bg-white text-slate-400 border border-slate-100 rounded-[2rem] text-[11px] font-black">Annulla</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 bg-white text-slate-400 border border-slate-100 rounded-[2rem] text-[11px] font-black uppercase tracking-widest">Annulla</button>
               </div>
             </form>
           </div>
