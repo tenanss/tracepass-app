@@ -5,7 +5,6 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import { QRCodeSVG } from 'qrcode.react'
 
-// 1. DEFINIZIONE LIMITI PIANI
 const PLAN_LIMITS = {
   starter: 3,
   business: 20,
@@ -15,7 +14,6 @@ const PLAN_LIMITS = {
 export default function DashboardPage() {
   const router = useRouter()
   
-  // STATI
   const [planType, setPlanType] = useState<string>('starter')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [products, setProducts] = useState<any[]>([])
@@ -63,69 +61,15 @@ export default function DashboardPage() {
     if (sub) setPlanType(sub.plan_type)
   }
 
-  const handleUpgrade = async (period: 'monthly' | 'yearly') => {
-    const priceIds = {
-      monthly: 'price_1T28vyE7LrcUGUCEt5fI9g2t',
-      yearly: 'price_1T28vyE7LrcUGUCEo593b8v5'
-    };
-
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: priceIds[period] }),
-      });
-      
-      const data = await response.json();
-      if (data.url) window.location.href = data.url;
-      else alert("Errore Stripe: " + data.error);
-    } catch (err) {
-      console.error("Errore chiamata API checkout:", err);
-      alert("Errore di connessione. Riprova.");
-    }
-  };
-
   useEffect(() => {
-    let subscriptionChannel: any;
-
     const checkAuthAndSub = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.push('/login')
-        return
-      }
-
+      if (!session) { router.push('/login'); return; }
       setUserEmail(session.user.email ?? null)
-
-      let { data: sub, error: subError } = await supabase
-        .from('subscriptions')
-        .select('status, plan_type')
-        .eq('email', session.user.email)
-        .maybeSingle()
-
-      const isDevAdmin = session.user.email === adminEmail
-
-      if (!sub && !subError && !isDevAdmin) {
-        const { data: newSub } = await supabase
-          .from('subscriptions')
-          .insert([{ email: session.user.email, plan_type: 'starter', status: 'active' }])
-          .select().single()
-        if (newSub) sub = newSub
-      }
-
       await refreshData()
       setLoading(false)
-
-      subscriptionChannel = supabase
-        .channel('schema-db-changes')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'subscriptions', filter: `email=eq.${session.user.email}` }, 
-        () => refreshData())
-        .subscribe()
     }
-
     checkAuthAndSub()
-    return () => { if (subscriptionChannel) supabase.removeChannel(subscriptionChannel) }
   }, [router])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -174,101 +118,55 @@ export default function DashboardPage() {
     if (error) { alert(error.message); return; }
     const { data: { publicUrl } } = supabase.storage.from('product-assets').getPublicUrl(filePath)
     setNewProduct({ ...newProduct, [field]: publicUrl })
+    alert("File caricato!")
   }
 
-  // --- LOGICA LIMITI ---
+  // LOGICA TASTO
   const currentLimit = PLAN_LIMITS[planType as keyof typeof PLAN_LIMITS] || 3;
-  const isLimitReached = products.length >= currentLimit;
-  const isNotAdmin = userEmail !== adminEmail;
-  const showUpgradeButton = isLimitReached && isNotAdmin;
+  const showUpgradeButton = products.length >= currentLimit && userEmail !== adminEmail;
 
-  if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px] tracking-widest animate-pulse">TracePass Loading...</div>
-
-  if (isPrintMode) {
-    return (
-      <div className="min-h-screen bg-white p-10">
-        <div className="print:hidden mb-8 flex justify-between items-center bg-slate-900 p-6 rounded-2xl text-white">
-          <h2 className="font-black uppercase italic">Modalità Stampa ({products.length})</h2>
-          <div className="flex gap-4">
-            <button onClick={() => window.print()} className="bg-[#0062ff] px-6 py-2 rounded-xl text-[10px] font-black uppercase">Stampa</button>
-            <button onClick={() => setIsPrintMode(false)} className="bg-white/10 px-6 py-2 rounded-xl text-[10px] font-black uppercase">Esci</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-6">
-          {products.map((p) => (
-            <div key={p.id} className="border p-6 flex flex-col items-center rounded-xl bg-white page-break-inside-avoid">
-              <QRCodeSVG value={`${window.location.origin}/product/${p.id}`} size={100} level="H" />
-              <h3 className="mt-4 font-black uppercase italic text-[10px]">{p.name}</h3>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <div className="min-h-screen bg-[#f1f3f5] flex items-center justify-center font-black uppercase text-slate-400 text-[10px]">TracePass Loading...</div>
 
   return (
     <div className="min-h-screen bg-[#f1f3f5] font-sans text-slate-900 text-left">
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-8 py-4">
+      <nav className="bg-white/80 border-b border-slate-200 sticky top-0 z-50 px-8 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-black italic tracking-tighter text-slate-800 uppercase">TRACE<span className="text-[#0062ff]">PASS</span></h1>
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-200 px-4 py-2 rounded-xl">Disconnetti</button>
+          <h1 className="text-xl font-black italic text-slate-800 uppercase">TRACE<span className="text-[#0062ff]">PASS</span></h1>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-[10px] font-black uppercase border px-4 py-2 rounded-xl">Esci</button>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto p-8">
-        <div className="mb-12">
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Area Aziendale.</h2>
-          <p className="text-slate-500 font-medium italic text-sm uppercase">Piano: {planType}</p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          {/* IL BIVIO DEFINITIVO TRA BLU E GIALLO */}
           {showUpgradeButton ? (
-            <div className="md:col-span-1 bg-yellow-400 p-8 rounded-[2.5rem] text-black shadow-xl flex flex-col justify-between min-h-[180px] border border-yellow-500 animate-in fade-in zoom-in duration-500">
+            <div className="md:col-span-1 bg-yellow-400 p-8 rounded-[2.5rem] text-black shadow-xl flex flex-col justify-between min-h-[180px]">
               <span className="text-3xl">🚀</span>
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest block mb-2 text-black/60">Limite Raggiunto</span>
-                <button onClick={() => handleUpgrade('monthly')} className="w-full py-2 bg-black text-white rounded-xl text-[9px] font-black uppercase">Passa a Business</button>
-              </div>
+              <button onClick={() => window.location.href='/#pricing'} className="w-full py-2 bg-black text-white rounded-xl text-[9px] font-black uppercase">Passa a Business</button>
             </div>
           ) : (
-            <button 
-              onClick={() => { setEditingId(null); setNewProduct({name:'', repair_score:'5', origin:'', material_composition:'', carbon_footprint:'', substances_reach:'', recycling_instructions:'', tech_doc_url: '', video_url: ''}); setIsModalOpen(true); }} 
-              className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl hover:bg-blue-700 flex flex-col justify-between min-h-[180px] group"
-            >
-              <span className="text-3xl group-hover:rotate-90 transition-transform">+</span>
-              <span className="text-sm font-black uppercase tracking-widest leading-tight">Crea Nuovo<br/>Prodotto</span>
+            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="md:col-span-1 bg-[#0062ff] p-8 rounded-[2.5rem] text-white shadow-xl min-h-[180px] flex flex-col justify-between">
+              <span className="text-3xl">+</span>
+              <span className="text-sm font-black uppercase">Crea Nuovo</span>
             </button>
           )}
-          
-          <button onClick={() => setIsPrintMode(true)} className="md:col-span-1 bg-slate-800 p-8 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-between min-h-[180px]">
-            <span className="text-3xl">⎙</span>
-            <span className="text-sm font-black uppercase tracking-widest leading-tight">Stampa Etichette</span>
-          </button>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Slot Occupati</span>
-            <span className={`text-5xl font-black italic ${isLimitReached ? 'text-red-500' : 'text-slate-900'}`}>
-              {products.length}/{currentLimit}
-            </span>
+            <span className="text-slate-400 text-[10px] font-black uppercase">Slot Occupati</span>
+            <span className={`text-5xl font-black italic ${products.length >= currentLimit ? 'text-red-500' : 'text-slate-900'}`}>{products.length}/{currentLimit}</span>
           </div>
         </div>
 
-        {/* LISTA PRODOTTI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p) => (
-            <div key={p.id} className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8 flex flex-col justify-between min-h-[420px]">
+            <div key={p.id} className="bg-white rounded-[3rem] border border-slate-100 p-8 flex flex-col justify-between min-h-[400px]">
               <div>
-                <div className="flex justify-between items-start mb-6">
-                  <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">{p.name}</h3>
-                  <span className="bg-slate-100 text-slate-400 text-[9px] px-3 py-1 rounded-full font-bold">DP-{p.id.slice(0,5)}</span>
-                </div>
-                <div className="space-y-3 mb-6 text-[10px] font-bold uppercase text-slate-400">
+                <h3 className="text-2xl font-black uppercase italic mb-4">{p.name}</h3>
+                <div className="space-y-2 text-[10px] font-bold uppercase text-slate-400">
                   <div className="flex justify-between border-b pb-1"><span>Origine</span><span className="text-slate-800">{p.origin}</span></div>
                   <div className="flex justify-between border-b pb-1"><span>Carbon</span><span className="text-blue-500">{p.carbon_footprint}</span></div>
                 </div>
               </div>
-              <div className="grid gap-3">
+              <div className="grid gap-3 mt-6">
                 <a href={`/product/${p.id}`} target="_blank" className="bg-[#0062ff] text-white text-center py-4 rounded-2xl text-[9px] font-black uppercase">Vedi Passport</a>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => { setEditingId(p.id); setNewProduct({...p, repair_score: p.repair_score.toString()}); setIsModalOpen(true); }} className="bg-slate-50 text-slate-400 py-4 rounded-2xl text-[9px] font-black uppercase">Modifica</button>
@@ -280,27 +178,57 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* MODALE SEMPLIFICATA */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto">
-          <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto animate-in fade-in zoom-in duration-300">
-            <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800 mb-8 text-center">{editingId ? 'Modifica' : 'Nuovo'} Passport</h3>
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-[#f8f9fa] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl my-auto">
+            <h3 className="text-2xl font-black uppercase italic text-center mb-8">Gestione Passport</h3>
+            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               <div className="md:col-span-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Nome Modello</label>
-                <input required className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold italic" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Nome Modello</label>
+                <input required className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Origine</label>
-                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold italic" value={newProduct.origin} onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})} />
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Origine</label>
+                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.origin} onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})} />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">Carbon Footprint</label>
-                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold italic" value={newProduct.carbon_footprint} onChange={(e) => setNewProduct({...newProduct, carbon_footprint: e.target.value})} />
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Carbon Footprint</label>
+                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.carbon_footprint} onChange={(e) => setNewProduct({...newProduct, carbon_footprint: e.target.value})} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Materiali Principali</label>
+                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.material_composition} onChange={(e) => setNewProduct({...newProduct, material_composition: e.target.value})} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Istruzioni Riciclo</label>
+                <textarea className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold min-h-[80px]" value={newProduct.recycling_instructions} onChange={(e) => setNewProduct({...newProduct, recycling_instructions: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Sostanze (REACH)</label>
+                <input className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.substances_reach} onChange={(e) => setNewProduct({...newProduct, substances_reach: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Repair Score</label>
+                <select className="w-full p-5 rounded-2xl bg-white border border-slate-200 text-sm font-bold" value={newProduct.repair_score} onChange={(e) => setNewProduct({...newProduct, repair_score: e.target.value})}>
+                  <option value="5">5/5</option><option value="4">4/5</option><option value="3">3/5</option><option value="2">2/5</option><option value="1">1/5</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-100">
+                <span className="text-[9px] font-black uppercase text-[#0062ff] block mb-4">Allegati Digitali</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 block mb-2">Scheda Tecnica (PDF)</label>
+                    <input type="file" accept=".pdf" onChange={(e) => handleFileUpload(e, 'tech_doc_url')} className="text-[9px] italic" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 block mb-2">Link Video Tutorial</label>
+                    <input placeholder="https://..." className="w-full p-3 rounded-xl bg-slate-50 border-none text-[10px] font-bold" value={newProduct.video_url} onChange={(e) => setNewProduct({...newProduct, video_url: e.target.value})} />
+                  </div>
+                </div>
               </div>
               <div className="md:col-span-2 flex gap-4 mt-6">
-                <button type="submit" className="flex-1 bg-[#0062ff] text-white py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl">Salva</button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 bg-white text-slate-400 border border-slate-100 rounded-[2rem] text-[11px] font-black uppercase">Esci</button>
+                <button type="submit" className="flex-1 bg-[#0062ff] text-white py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest">Salva Prodotto</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 bg-white text-slate-400 border border-slate-100 rounded-[2rem] text-[11px] font-black uppercase">Annulla</button>
               </div>
             </form>
           </div>
