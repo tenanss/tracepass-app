@@ -5,7 +5,6 @@ import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'; 
 
 export default function LoginPage() {
-  // Inizializzazione corretta per SSR
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -30,8 +29,6 @@ export default function LoginPage() {
       setError("Accesso negato: " + authError.message)
       setLoading(false)
     } else {
-      // Con createBrowserClient, i cookie vengono gestiti automaticamente.
-      // Facciamo un refresh totale per attivare il Middleware.
       window.location.href = '/dashboard'
     }
   }
@@ -49,14 +46,16 @@ export default function LoginPage() {
           <input 
             type="email" 
             placeholder="Email"
-            className="p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none"
+            /* MODIFICA: Aggiunto text-black e placeholder color per visibilità mobile */
+            className="p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-black placeholder:text-slate-400"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <input 
             type="password" 
             placeholder="Password"
-            className="p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none"
+            /* MODIFICA: Aggiunto text-black e placeholder color per visibilità mobile */
+            className="p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-black placeholder:text-slate-400"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -64,19 +63,20 @@ export default function LoginPage() {
           {error && <p className="text-red-500 text-[10px] font-bold uppercase text-center">{error}</p>}
 
           <button 
+            type="submit"
             disabled={loading}
-            className="py-4 bg-[#0062ff] text-white rounded-2xl font-bold uppercase tracking-widest hover:opacity-90 transition-all"
+            className="py-4 bg-[#0062ff] text-white rounded-2xl font-bold uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? 'Verifica...' : 'Accedi'}
           </button>
         </form>
-        {/* Link per la registrazione da aggiungere sotto il form di Login */}
-<p className="mt-8 text-center text-[13px] text-gray-400 font-medium">
-  Non hai un account?{" "}
-  <Link href="/register" className="text-[#0062ff] font-bold hover:underline ml-1">
-    Registrati ora
-  </Link>
-</p>
+
+        <p className="mt-8 text-center text-[13px] text-gray-400 font-medium">
+          Non hai un account?{" "}
+          <Link href="/register" className="text-[#0062ff] font-bold hover:underline ml-1">
+            Registrati ora
+          </Link>
+        </p>
       </div>
     </div>
   )

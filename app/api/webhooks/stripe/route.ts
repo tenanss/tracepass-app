@@ -30,12 +30,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
   }
 
-  // --- 1. PRIMO ACQUISTO ---
+  // --- 1. PRIMO ACQUISTO (Upgrade a Business) ---
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as any;
     const customerEmail = session.customer_details?.email;
 
     if (customerEmail) {
+      // Recuperiamo la scadenza reale dall'oggetto subscription di Stripe
+      const subscriptionDetail = await stripe.subscriptions.retrieve(session.subscription as string) as any;
+const expiryDate = new Date(subscriptionDetail.current_period_end * 1000).toISOString();
+
       const { error } = await supabase
         .from('subscriptions')
         .upsert({ 
@@ -44,25 +48,23 @@ export async function POST(req: Request) {
           stripe_customer_id: session.customer as string,
           status: 'active',
           plan_type: 'business',
-          current_period_end: new Date().toISOString()
+          subscription_expiry: expiryDate // ✅ Salviamo nella nuova colonna creata oggi
         }, { onConflict: 'email' });
 
       if (error) console.error("❌ Errore Supabase (Insert):", error.message);
     }
   }
 
-  // --- 2. AGGIORNAMENTO (Customer Portal) ---
+  // --- 2. AGGIORNAMENTO (Rinnovi o Cambio piano) ---
   if (event.type === 'customer.subscription.updated') {
-    // Usiamo 'any' per saltare il controllo TS sulla proprietà current_period_end
     const subscription = event.data.object as any;
-    
     const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: subscription.status,
-        current_period_end: periodEnd,
+        subscription_expiry: periodEnd, // ✅ Aggiorniamo la scadenza al rinnovo
       })
       .eq('stripe_subscription_id', subscription.id);
 
@@ -77,7 +79,8 @@ export async function POST(req: Request) {
       .from('subscriptions')
       .update({ 
         plan_type: 'starter', 
-        status: 'canceled' 
+        status: 'canceled',
+        subscription_expiry: null // Puliamo la data se l'abbonamento termina
       })
       .eq('stripe_subscription_id', subscription.id);
 
