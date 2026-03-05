@@ -43,7 +43,11 @@ export default function DemoProductPassport() {
         <div className="bg-white rounded-[3.5rem] p-10 shadow-sm border border-white flex flex-col items-center text-center">
             <span className="text-[10px] font-black uppercase text-[#0062ff] tracking-[0.3em] mb-8 block">Certificato Digitale 2026</span>
             <div className="p-6 bg-white border border-slate-50 rounded-[2.5rem] shadow-xl mb-6 ring-8 ring-slate-50/50">
-                <QRCodeSVG value={typeof window !== 'undefined' ? window.location.href : ''} size={200} level={"H"} />
+                <QRCodeSVG 
+  value="https://tracepass-app.vercel.app/demo" // 👈 Sostituisci con il tuo URL reale della demo
+  size={200} 
+  level={"H"} 
+/>
             </div>
             <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-1">Product Unique ID</p>
             <code className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full">{product.id}</code>
