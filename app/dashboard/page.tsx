@@ -168,7 +168,7 @@ const productData = {
         <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-[10px] font-black uppercase border px-4 py-2 rounded-xl">Esci</button>
       </nav>
 
-      <main className="max-w-7xl mx-auto p-8 text-left">
+<main className="max-w-7xl mx-auto p-8 text-left">
         <div className="mb-12">
           <h2 className="text-4xl font-black tracking-tight mb-2 italic">Benvenuto nell'area Aziendale</h2>
           <p className="text-slate-500 font-bold text-sm uppercase">PIANO ATTIVO: {planType}</p>
@@ -200,18 +200,23 @@ const productData = {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p) => (
-            <div key={p.id} className="bg-white rounded-[3.5rem] border border-slate-100 p-9 flex flex-col justify-between min-h-[440px] shadow-sm">
+            <div key={p.id} className="bg-white rounded-[3.5rem] border border-slate-100 p-9 flex flex-col justify-between min-h-[520px] shadow-sm">
               <div>
                 <h3 className="text-2xl font-black uppercase italic mb-6 tracking-tighter">{p.name}</h3>
                 <div className="space-y-3 text-[10px] font-bold uppercase text-slate-400">
-                  <div className="flex justify-between border-b pb-1"><span>Origine</span><span className="text-slate-800">{p.origin}</span></div>
-                  <div className="flex justify-between border-b pb-1"><span>Carbon</span><span className="text-blue-500">{p.carbon_footprint}</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>Origine</span><span className="text-slate-800">{p.origin || 'N/D'}</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>Carbon</span><span className="text-blue-500">{p.carbon_footprint || '0'} tCO2</span></div>
+                  {/* Nuovi campi aggiunti sotto */}
+                  <div className="flex justify-between border-b pb-1"><span>Repair Score</span><span className="text-blue-500">{p.repair_score || '0'}/5</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>Materiali</span><span className="text-slate-800 truncate ml-4">{p.material_composition || 'N/D'}</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>REACH</span><span className="text-slate-800">{p.substances_reach || 'Conforme'}</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>Riciclo</span><span className="text-slate-800 truncate ml-4">{p.recycling_instructions || 'N/D'}</span></div>
                 </div>
               </div>
               <div className="grid gap-3 mt-8">
                 <a href={`/product/${p.id}`} target="_blank" className="bg-[#0062ff] text-white text-center py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest">Vedi Passport</a>
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => { setEditingId(p.id); setNewProduct({...p, repair_score: p.repair_score.toString()}); setIsModalOpen(true); }} className="bg-slate-50 text-slate-400 py-4 rounded-2xl text-[9px] font-black uppercase">Modifica</button>
+                  <button onClick={() => { setEditingId(p.id); setNewProduct({...p, repair_score: p.repair_score?.toString()}); setIsModalOpen(true); }} className="bg-slate-50 text-slate-400 py-4 rounded-2xl text-[9px] font-black uppercase">Modifica</button>
                   <button onClick={() => handleDelete(p.id)} className="bg-red-50 text-red-400 py-4 rounded-2xl text-[9px] font-black uppercase">Elimina</button>
                 </div>
               </div>
