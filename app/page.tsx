@@ -258,7 +258,7 @@ export default function HomePage() {
                 <li className="flex items-center gap-3 text-sm font-medium text-gray-600 italic"><span className="text-blue-500 font-bold">🛠</span> Integrazione ERP/SAP</li>
               </ul>
             </div>
-            <a href="mailto:sales@tracepass.com" className="w-full text-center py-4 rounded-2xl border-2 border-gray-200 font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover:border-gray-900 group-hover:text-gray-900 transition-all">
+            <a href="mailto:info@tracepass.it" className="w-full text-center py-4 rounded-2xl border-2 border-gray-200 font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover:border-gray-900 group-hover:text-gray-900 transition-all">
               Contattaci
             </a>
           </div>
@@ -278,7 +278,7 @@ export default function HomePage() {
             <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
                 <Link href="/privacy" className="hover:text-[#0062ff] transition-colors">Privacy</Link>
                 <Link href="/terms" className="hover:text-[#0062ff] transition-colors">Terms</Link>
-                <a href="mailto:support@tracepass.com" className="hover:text-[#0062ff] transition-colors">Support</a>
+                <a href="mailto:supporto@tracepass.it" className="hover:text-[#0062ff] transition-colors">Supporto</a>
             </div>
         </div>
       </footer>
