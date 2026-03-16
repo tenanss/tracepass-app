@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛡️ TracePass - Digital Product Passport (DPP)
 
-## Getting Started
+**TracePass** è la piattaforma SaaS definitiva per la creazione e gestione dei **Passaporti Digitali di Prodotto (DPP)**, progettata per rendere le aziende conformi alle nuove normative europee sull'**Ecodesign**.
 
-First, run the development server:
+![TracePass Banner](https://img.shields.io/badge/Status-In%20Development-0066ff?style=for-the-badge)
+![Tech](https://img.shields.io/badge/Tech-Next.js%20%7C%20Tailwind-121827?style=for-the-badge)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Vision
+TracePass trasforma la tracciabilità da un obbligo normativo a un vantaggio competitivo. Permettiamo ai brand di raccontare la storia, la sostenibilità e l'origine di ogni singolo prodotto attraverso un'interfaccia semplice, sicura e scalabile.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Caratteristiche Principali
+* **Generazione DPP:** Creazione rapida di passaporti digitali conformi agli standard EU.
+* **Piani Flessibili:** Dalla versione Free al piano **Business** (fino a 20 prodotti) fino alle soluzioni **Enterprise**.
+* **Dashboard Intuitiva:** Gestione completa del catalogo e monitoraggio dei dati di sostenibilità.
+* **Design Professionale:** Interfaccia moderna basata sui colori istituzionali (Deep Grey `#121827` & Electric Blue `#0066ff`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
+* **Framework:** Next.js (App Router)
+* **Styling:** Tailwind CSS
+* **Database/Auth:** [Inserisci qui se usi Supabase/Firebase/altro]
+* **Infrastructure:** Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📧 Contatti
+* **Informazioni Commerciali:** [info@tracepass.it](mailto:info@tracepass.it)
+* **Supporto Tecnico:** [supporto@tracepass.it](mailto:supporto@tracepass.it)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+© 2026 TracePass — *Ecodesign Compliant System*
