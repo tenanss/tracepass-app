@@ -17,7 +17,7 @@ TracePass trasforma la tracciabilità da un obbligo normativo a un vantaggio com
 ## 🛠️ Tech Stack
 * **Framework:** Next.js (App Router)
 * **Styling:** Tailwind CSS
-* **Database/Auth:** [Inserisci qui se usi Supabase/Firebase/altro]
+* **Database/Auth:** Supabase
 * **Infrastructure:** Vercel
 
 ## 📧 Contatti
